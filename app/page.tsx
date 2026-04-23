@@ -1,0 +1,19 @@
+import HeroBanner from '@/components/home/HeroBanner'
+import CategoryGrid from '@/components/home/CategoryGrid'
+import FlashSales from '@/components/home/FlashSales'
+import FeaturedProducts from '@/components/home/FeaturedProducts'
+import TrendingSection from '@/components/home/TrendingSection'
+import WhatsAppCTA from '@/components/home/WhatsAppCTA'
+
+export default function HomePage() {
+  return (
+    <>
+      <HeroBanner />
+      <CategoryGrid />
+      <FlashSales />
+      <FeaturedProducts />
+      <TrendingSection />
+      <WhatsAppCTA />
+    </>
+  )
+}
