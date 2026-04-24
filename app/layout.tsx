@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CartSidebar from '@/components/layout/CartSidebar'
-
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: {
@@ -58,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Jenga" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${inter.className} bg-slate-50 text-slate-800 antialiased`}>
+      <body className="font-sans bg-slate-50 text-slate-800 antialiased">
         <Navbar />
         <CartSidebar />
         <main className="min-h-screen">{children}</main>

@@ -115,7 +115,7 @@ export default function SellerDashboardPage() {
                     <td className="py-3 px-4 font-medium text-brand-700">{order.id}</td>
                     <td className="py-3 px-4 text-slate-700">
                       <p className="font-medium">{order.customerName}</p>
-                      <p className="text-xs text-slate-400">{order.deliveryAddress.county}</p>
+                      <p className="text-xs text-slate-400">{order.county}</p>
                     </td>
                     <td className="py-3 px-4 text-slate-600">{order.items.length} item(s)</td>
                     <td className="py-3 px-4 font-semibold text-slate-800">{formatKES(order.total)}</td>

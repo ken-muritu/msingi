@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import {
   Smartphone, Laptop, Tv, Thermometer, RefreshCw,
-  Headphones, Tablet, Flame, ChevronRight,
+  Headphones, Tablet, Flame, ChevronRight, type LucideIcon,
 } from 'lucide-react'
 import { categories } from '@/lib/data'
 
-const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const iconMap: Record<string, LucideIcon> = {
   Smartphone, Laptop, Tv, Thermometer, RefreshCw,
   Headphones, Tablet, Flame,
 }
