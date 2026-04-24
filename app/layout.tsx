@@ -3,6 +3,8 @@ import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CartSidebar from '@/components/layout/CartSidebar'
+import BottomNav from '@/components/layout/BottomNav'
+import CompareBar from '@/components/products/CompareBar'
 
 export const metadata: Metadata = {
   title: {
@@ -58,8 +60,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans bg-slate-50 text-slate-800 antialiased">
         <Navbar />
         <CartSidebar />
-        <main className="min-h-screen">{children}</main>
+        <main className="min-h-screen pb-16 md:pb-0">{children}</main>
         <Footer />
+        <CompareBar />
+        <BottomNav />
       </body>
     </html>
   )

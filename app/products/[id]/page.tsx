@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -10,7 +10,7 @@ import {
   CreditCard, CheckCircle2, Search, Package,
 } from 'lucide-react'
 import { getProductById, getRelatedProducts, reviews } from '@/lib/data'
-import { useCartStore } from '@/lib/store'
+import { useCartStore, useRecentlyViewedStore } from '@/lib/store'
 import { formatKES, generateWhatsAppProductMessage } from '@/lib/utils'
 import ProductCard from '@/components/products/ProductCard'
 import MPesaModal from '@/components/checkout/MPesaModal'
@@ -49,6 +49,11 @@ function ProductDetail({
   const [installationAdded, setInstallationAdded] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
+  const addRecent = useRecentlyViewedStore((s) => s.addItem)
+
+  useEffect(() => {
+    addRecent({ id: product.id, name: product.name, brand: product.brand, price: product.price, image: product.images[0], category: product.category, rating: product.rating })
+  }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddToCart = () => {
     addItem({

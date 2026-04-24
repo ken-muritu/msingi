@@ -16,8 +16,8 @@ const navLinks = [
   { href: '/products?category=fridges', label: '🧊 Fridges' },
   { href: '/products?category=washing-machines', label: '🫧 Washers' },
   { href: '/products?category=audio', label: '🎧 Audio' },
-  { href: '/products?category=tablets', label: '⬜ Tablets' },
-  { href: '/products?category=cookers', label: '🔥 Cookers' },
+  { href: '/deals', label: '🏷️ Deals' },
+  { href: '/live', label: '� Live' },
 ]
 
 export default function Navbar() {
@@ -174,7 +174,13 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
-            <li className="ml-auto">
+            <li className="ml-auto flex items-center gap-1">
+              <Link
+                href="/wishlist"
+                className="inline-flex items-center text-sm px-3 py-2 text-slate-600 hover:text-brand-700 hover:bg-brand-50 rounded-lg transition-colors whitespace-nowrap"
+              >
+                ♡ Wishlist
+              </Link>
               <Link
                 href="/seller/dashboard"
                 className="inline-flex items-center text-sm px-3 py-2 text-brand-700 hover:bg-brand-50 rounded-lg font-medium transition-colors whitespace-nowrap"

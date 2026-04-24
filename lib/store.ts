@@ -3,6 +3,14 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+const storage = createJSONStorage(() =>
+  typeof window !== 'undefined'
+    ? localStorage
+    : { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+)
+
+// ─── Cart ────────────────────────────────────────────────────────────────────
+
 export interface CartItem {
   id: string
   name: string
@@ -48,19 +56,11 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
-      removeItem: (id) =>
-        set({ items: get().items.filter((i) => i.id !== id) }),
+      removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
 
       updateQuantity: (id, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(id)
-          return
-        }
-        set({
-          items: get().items.map((i) =>
-            i.id === id ? { ...i, quantity } : i
-          ),
-        })
+        if (quantity <= 0) { get().removeItem(id); return }
+        set({ items: get().items.map((i) => i.id === id ? { ...i, quantity } : i) })
       },
 
       clearCart: () => set({ items: [] }),
@@ -68,12 +68,7 @@ export const useCartStore = create<CartStore>()(
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set({ isOpen: !get().isOpen }),
     }),
-    {
-      name: 'jenga-cart-v1',
-      storage: createJSONStorage(() =>
-        typeof window !== 'undefined' ? localStorage : ({ getItem: () => null, setItem: () => {}, removeItem: () => {} })
-      ),
-    }
+    { name: 'jenga-cart-v1', storage }
   )
 )
 
@@ -82,3 +77,124 @@ export const useCartTotal = () =>
 
 export const useCartCount = () =>
   useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0))
+
+// ─── Wishlist ────────────────────────────────────────────────────────────────
+
+export interface WishlistItem {
+  id: string
+  name: string
+  brand: string
+  price: number
+  originalPrice?: number
+  image: string
+  category: string
+  rating: number
+  discount?: number
+}
+
+interface WishlistStore {
+  items: WishlistItem[]
+  addItem: (item: WishlistItem) => void
+  removeItem: (id: string) => void
+  toggleItem: (item: WishlistItem) => void
+  hasItem: (id: string) => boolean
+  clear: () => void
+}
+
+export const useWishlistStore = create<WishlistStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      addItem: (item) => {
+        if (!get().items.find((i) => i.id === item.id))
+          set({ items: [...get().items, item] })
+      },
+      removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+      toggleItem: (item) => {
+        const exists = get().items.find((i) => i.id === item.id)
+        exists ? get().removeItem(item.id) : get().addItem(item)
+      },
+      hasItem: (id) => !!get().items.find((i) => i.id === id),
+      clear: () => set({ items: [] }),
+    }),
+    { name: 'jenga-wishlist-v1', storage }
+  )
+)
+
+// ─── Recently Viewed ─────────────────────────────────────────────────────────
+
+export interface RecentItem {
+  id: string
+  name: string
+  brand: string
+  price: number
+  image: string
+  category: string
+  rating: number
+  viewedAt: number
+}
+
+interface RecentlyViewedStore {
+  items: RecentItem[]
+  addItem: (item: Omit<RecentItem, 'viewedAt'>) => void
+  clear: () => void
+}
+
+export const useRecentlyViewedStore = create<RecentlyViewedStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      addItem: (item) => {
+        const filtered = get().items.filter((i) => i.id !== item.id)
+        const updated = [{ ...item, viewedAt: Date.now() }, ...filtered].slice(0, 12)
+        set({ items: updated })
+      },
+      clear: () => set({ items: [] }),
+    }),
+    { name: 'jenga-recent-v1', storage }
+  )
+)
+
+// ─── Product Comparison ──────────────────────────────────────────────────────
+
+export interface CompareItem {
+  id: string
+  name: string
+  brand: string
+  price: number
+  image: string
+  category: string
+  rating: number
+  specifications: Record<string, string>
+  features: string[]
+}
+
+interface CompareStore {
+  items: CompareItem[]
+  addItem: (item: CompareItem) => void
+  removeItem: (id: string) => void
+  toggleItem: (item: CompareItem) => void
+  hasItem: (id: string) => boolean
+  clear: () => void
+}
+
+export const useCompareStore = create<CompareStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      addItem: (item) => {
+        if (get().items.length >= 4) return
+        if (!get().items.find((i) => i.id === item.id))
+          set({ items: [...get().items, item] })
+      },
+      removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+      toggleItem: (item) => {
+        const exists = get().items.find((i) => i.id === item.id)
+        exists ? get().removeItem(item.id) : get().addItem(item)
+      },
+      hasItem: (id) => !!get().items.find((i) => i.id === id),
+      clear: () => set({ items: [] }),
+    }),
+    { name: 'jenga-compare-v1', storage }
+  )
+)

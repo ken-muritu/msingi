@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   User, Package, Heart, Star, LogOut, ChevronRight,
-  MapPin, Phone, Mail, Shield, Truck, CheckCircle2,
+  MapPin, Phone, Mail, Shield, Truck, CheckCircle2, Trash2, ShoppingCart,
 } from 'lucide-react'
 import { mockOrders } from '@/lib/data'
 import { formatKES, timeAgo } from '@/lib/utils'
+import { useWishlistStore } from '@/lib/store'
 
-const tabs = ['orders', 'profile', 'loyalty'] as const
+const tabs = ['orders', 'profile', 'wishlist', 'loyalty'] as const
 type Tab = typeof tabs[number]
 
 const statusColors: Record<string, string> = {
@@ -45,10 +47,11 @@ export default function AccountPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl mb-6">
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl mb-6 overflow-x-auto">
         {[
-          { key: 'orders', label: 'My Orders', icon: Package },
+          { key: 'orders', label: 'Orders', icon: Package },
           { key: 'profile', label: 'Profile', icon: User },
+          { key: 'wishlist', label: 'Wishlist', icon: Heart },
           { key: 'loyalty', label: 'Loyalty', icon: Star },
         ].map(({ key, label, icon: Icon }) => (
           <button
@@ -146,6 +149,9 @@ export default function AccountPage() {
         </div>
       )}
 
+      {/* Wishlist tab */}
+      {activeTab === 'wishlist' && <WishlistTab />}
+
       {/* Loyalty tab */}
       {activeTab === 'loyalty' && (
         <div className="space-y-4">
@@ -196,6 +202,52 @@ export default function AccountPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function WishlistTab() {
+  const { items, removeItem } = useWishlistStore()
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-16 text-center">
+        <Heart size={48} className="text-slate-200 mb-4" />
+        <p className="font-semibold text-slate-600 mb-1">No saved items yet</p>
+        <p className="text-sm text-slate-400 mb-5">Tap the ♡ on any product to save it here.</p>
+        <Link href="/products" className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+          Browse Products
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {items.map((item) => (
+        <div key={item.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <Link href={`/products/${item.id}`} className="block relative aspect-square bg-slate-50">
+            <Image src={item.image} alt={item.name} fill className="object-cover" sizes="(max-width:640px) 50vw, 33vw" />
+            {item.discount && (
+              <span className="absolute top-2 left-2 bg-flash-DEFAULT text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                -{item.discount}%
+              </span>
+            )}
+          </Link>
+          <div className="p-3">
+            <p className="text-[10px] font-semibold text-brand-600 uppercase mb-0.5">{item.brand}</p>
+            <Link href={`/products/${item.id}`} className="text-xs font-medium text-slate-800 line-clamp-2 hover:text-brand-700 transition-colors block">
+              {item.name}
+            </Link>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-sm font-bold text-slate-900">{formatKES(item.price)}</p>
+              <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
