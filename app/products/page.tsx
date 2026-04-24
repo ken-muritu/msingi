@@ -3,11 +3,11 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { SlidersHorizontal, X, ChevronDown } from 'lucide-react'
-import { products, categories } from '@/lib/data'
+import { products as staticProducts, categories } from '@/lib/data'
+import { useSellerProductsStore } from '@/lib/store'
 import ProductCard from '@/components/products/ProductCard'
 import { Suspense } from 'react'
 
-const brands = [...new Set(products.map((p) => p.brand))].sort()
 const priceRanges = [
   { label: 'Under KES 20,000', min: 0, max: 20000 },
   { label: 'KES 20,000 – 50,000', min: 20000, max: 50000 },
@@ -23,12 +23,16 @@ function ProductsContent() {
   const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null)
   const [sortBy, setSortBy] = useState('relevance')
 
+  const sellerProducts = useSellerProductsStore((s) => s.products)
+  const allProducts = useMemo(() => [...staticProducts, ...sellerProducts], [sellerProducts])
+  const brands = useMemo(() => [...new Set(allProducts.map((p) => p.brand))].sort(), [allProducts])
+
   const categoryParam = searchParams.get('category') ?? ''
   const searchParam = searchParams.get('search') ?? ''
   const saleParam = searchParams.get('sale') ?? ''
 
   const filtered = useMemo(() => {
-    let list = [...products]
+    let list = [...allProducts]
 
     if (categoryParam) list = list.filter((p) => p.category === categoryParam)
     if (saleParam === 'flash') list = list.filter((p) => p.isFlashSale)
@@ -52,7 +56,7 @@ function ProductsContent() {
       case 'discount': return list.sort((a, b) => (b.discount ?? 0) - (a.discount ?? 0))
       default: return list
     }
-  }, [categoryParam, searchParam, saleParam, selectedBrands, priceRange, sortBy])
+  }, [allProducts, categoryParam, searchParam, saleParam, selectedBrands, priceRange, sortBy])
 
   const currentCategory = categories.find((c) => c.slug === categoryParam)
 

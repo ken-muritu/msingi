@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import type { Product } from './data'
 
 const storage = createJSONStorage(() =>
   typeof window !== 'undefined'
@@ -196,5 +197,29 @@ export const useCompareStore = create<CompareStore>()(
       clear: () => set({ items: [] }),
     }),
     { name: 'jenga-compare-v1', storage }
+  )
+)
+
+// ─── Seller Products ──────────────────────────────────────────────────────────
+
+interface SellerProductsStore {
+  products: Product[]
+  addProduct: (product: Product) => void
+  updateProduct: (id: string, updates: Partial<Product>) => void
+  deleteProduct: (id: string) => void
+  getProductsBySeller: (sellerId: string) => Product[]
+}
+
+export const useSellerProductsStore = create<SellerProductsStore>()(
+  persist(
+    (set, get) => ({
+      products: [],
+      addProduct: (product) => set({ products: [...get().products, product] }),
+      updateProduct: (id, updates) =>
+        set({ products: get().products.map((p) => (p.id === id ? { ...p, ...updates } : p)) }),
+      deleteProduct: (id) => set({ products: get().products.filter((p) => p.id !== id) }),
+      getProductsBySeller: (sellerId) => get().products.filter((p) => p.seller.id === sellerId),
+    }),
+    { name: 'jenga-seller-products-v1', storage }
   )
 )

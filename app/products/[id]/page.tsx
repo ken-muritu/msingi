@@ -10,7 +10,7 @@ import {
   CreditCard, CheckCircle2, Search, Package,
 } from 'lucide-react'
 import { getProductById, getRelatedProducts, reviews } from '@/lib/data'
-import { useCartStore, useRecentlyViewedStore } from '@/lib/store'
+import { useCartStore, useRecentlyViewedStore, useSellerProductsStore } from '@/lib/store'
 import { formatKES, generateWhatsAppProductMessage } from '@/lib/utils'
 import ProductCard from '@/components/products/ProductCard'
 import MPesaModal from '@/components/checkout/MPesaModal'
@@ -22,7 +22,10 @@ interface PageProps {
 
 export default function ProductDetailPage({ params }: PageProps) {
   const { id } = use(params)
-  const product = getProductById(id)
+  const sellerProducts = useSellerProductsStore((s) => s.products)
+
+  const staticProduct = getProductById(id)
+  const product = staticProduct ?? sellerProducts.find((p) => p.id === id)
 
   if (!product) notFound()
 
