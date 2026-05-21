@@ -1,4 +1,4 @@
-// ─── Kora Commerce Data Model ───────────────────────────────────────────────
+// ─── Msingi Commerce Data Model ───────────────────────────────────────────────
 // Generic commerce primitives. No vertical-specific columns.
 // Vertical data lives in `attributes` (Json) fields.
 

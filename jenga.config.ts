@@ -1,6 +1,6 @@
-import type { KoraConfig } from '@kora/types';
+import type { MsingiConfig } from '@msingi/types';
 
-const config: KoraConfig = {
+const config: MsingiConfig = {
   // ─── Identity ───────────────────────────────────────────────────────────────
   instance: {
     name: 'Jenga Electronics',
@@ -33,7 +33,7 @@ const config: KoraConfig = {
       body: 'Inter',
       mono: 'JetBrains Mono',
     },
-    poweredByKora: false,
+    poweredByMsingi: false,
   },
 
   // ─── Business Model ───────────────────────────────────────────────────────

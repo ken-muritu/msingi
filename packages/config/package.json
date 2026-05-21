@@ -1,5 +1,5 @@
 {
-  "name": "@kora/config",
+  "name": "@msingi/config",
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.js",
@@ -17,7 +17,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@kora/types": "workspace:*"
+    "@msingi/types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5"

@@ -79,12 +79,12 @@ export class AuthService {
   }
 
   private generateToken(userId: string, role: string): string {
-    const secret = process.env.JWT_SECRET || 'kora-dev-secret-change-in-production';
+    const secret = process.env.JWT_SECRET || 'msingi-dev-secret-change-in-production';
     return jwt.sign({ sub: userId, role }, secret, { expiresIn: '7d' });
   }
 
   verifyToken(token: string): { sub: string; role: string } {
-    const secret = process.env.JWT_SECRET || 'kora-dev-secret-change-in-production';
+    const secret = process.env.JWT_SECRET || 'msingi-dev-secret-change-in-production';
     return jwt.verify(token, secret) as { sub: string; role: string };
   }
 }

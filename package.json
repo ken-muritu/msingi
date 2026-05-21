@@ -1,17 +1,17 @@
 {
-  "name": "kora",
+  "name": "msingi",
   "version": "1.0.0",
-  "description": "Kora — Modular Commerce Infrastructure for African Business",
+  "description": "Msingi — The Commerce Foundation for African Business",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=@kora/web",
-    "dev:backend": "turbo run dev --filter=@kora/backend",
+    "dev:web": "turbo run dev --filter=@msingi/web",
+    "dev:backend": "turbo run dev --filter=@msingi/backend",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "db:generate": "turbo run db:generate --filter=@kora/backend",
-    "db:push": "turbo run db:push --filter=@kora/backend"
+    "db:generate": "turbo run db:generate --filter=@msingi/backend",
+    "db:push": "turbo run db:push --filter=@msingi/backend"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

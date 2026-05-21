@@ -1,10 +1,10 @@
-// ─── Kora Configuration Type System ─────────────────────────────────────────
-// Every Kora deployment is driven by a single configuration file.
+// ─── Msingi Configuration Type System ─────────────────────────────────────────
+// Every Msingi deployment is driven by a single configuration file.
 // This is the definitive schema.
 
 // ─── Verticals ──────────────────────────────────────────────────────────────
 
-export type KoraVertical =
+export type MsingiVertical =
   | 'electronics'
   | 'fashion'
   | 'grocery'
@@ -30,11 +30,11 @@ export type SellerBadge = 'basic' | 'verified' | 'premium' | 'authorized';
 
 // ─── Instance Configuration ─────────────────────────────────────────────────
 
-export interface KoraInstance {
+export interface MsingiInstance {
   name: string;
   slug: string;
   domain: string;
-  vertical: KoraVertical;
+  vertical: MsingiVertical;
   tagline?: string;
   supportEmail?: string;
   supportPhone?: string;
@@ -43,7 +43,7 @@ export interface KoraInstance {
 
 // ─── Branding ───────────────────────────────────────────────────────────────
 
-export interface KoraBranding {
+export interface MsingiBranding {
   logo: string;
   logoDark?: string;
   favicon: string;
@@ -62,12 +62,12 @@ export interface KoraBranding {
     body: string;
     mono?: string;
   };
-  poweredByKora: boolean;
+  poweredByMsingi: boolean;
 }
 
 // ─── Marketplace Configuration ──────────────────────────────────────────────
 
-export interface KoraMarketplaceConfig {
+export interface MsingiMarketplaceConfig {
   defaultCommissionRate: number;
   payoutSchedule: PayoutSchedule;
   sellerVerification: SellerVerification;
@@ -80,18 +80,18 @@ export interface KoraMarketplaceConfig {
 
 // ─── Business Configuration ─────────────────────────────────────────────────
 
-export interface KoraBusiness {
+export interface MsingiBusiness {
   type: BusinessModel;
   currency: string;
   currencySymbol?: string;
   taxRate: number;
   taxInclusivePricing: boolean;
-  marketplace?: KoraMarketplaceConfig;
+  marketplace?: MsingiMarketplaceConfig;
 }
 
 // ─── Social Commerce Modules ────────────────────────────────────────────────
 
-export interface KoraSocialModules {
+export interface MsingiSocialModules {
   whatsapp: SocialCommerceLevel | false;
   tiktok: boolean;
   meta: boolean;
@@ -100,12 +100,12 @@ export interface KoraSocialModules {
 
 // ─── Module Toggles ─────────────────────────────────────────────────────────
 
-export interface KoraModules {
+export interface MsingiModules {
   core: true; // Always on
   marketplace: boolean;
   bnpl: boolean;
   dispatch: boolean;
-  social: KoraSocialModules;
+  social: MsingiSocialModules;
   loyalty: LoyaltyLevel;
   b2b: boolean;
   subscriptions: boolean;
@@ -116,7 +116,7 @@ export interface KoraModules {
 
 // ─── M-PESA Configuration ───────────────────────────────────────────────────
 
-export interface KoraMpesaConfig {
+export interface MsingiMpesaConfig {
   stkPush: boolean;
   paybill: string;
   lipaMdogoMdogo: boolean;
@@ -130,7 +130,7 @@ export interface KoraMpesaConfig {
 
 // ─── Card Payment Configuration ─────────────────────────────────────────────
 
-export interface KoraCardConfig {
+export interface MsingiCardConfig {
   provider: CardProvider;
   pesapalConsumerKey?: string; // Env var reference
   pesapalConsumerSecret?: string; // Env var reference
@@ -140,7 +140,7 @@ export interface KoraCardConfig {
 
 // ─── Cash on Delivery ───────────────────────────────────────────────────────
 
-export interface KoraCODConfig {
+export interface MsingiCODConfig {
   enabled: boolean;
   maxOrderValue?: number;
   allowedPostalCodes?: string[];
@@ -149,15 +149,15 @@ export interface KoraCODConfig {
 
 // ─── Payments ───────────────────────────────────────────────────────────────
 
-export interface KoraPayments {
-  mpesa: KoraMpesaConfig;
-  cards: KoraCardConfig;
-  cashOnDelivery: KoraCODConfig;
+export interface MsingiPayments {
+  mpesa: MsingiMpesaConfig;
+  cards: MsingiCardConfig;
+  cashOnDelivery: MsingiCODConfig;
 }
 
 // ─── Same-Day Delivery ──────────────────────────────────────────────────────
 
-export interface KoraSameDayDelivery {
+export interface MsingiSameDayDelivery {
   enabled: boolean;
   cutoffTime: string; // HH:MM
   zones: string[];
@@ -167,9 +167,9 @@ export interface KoraSameDayDelivery {
 
 export type CourierProvider = 'sendy' | 'fargo' | 'g4s' | 'glovo' | 'bolt' | 'custom';
 
-export interface KoraDelivery {
+export interface MsingiDelivery {
   couriers: CourierProvider[];
-  sameDayDelivery: KoraSameDayDelivery;
+  sameDayDelivery: MsingiSameDayDelivery;
   clickAndCollect: boolean;
   installationServices: boolean;
   freeDeliveryThreshold?: number;
@@ -178,7 +178,7 @@ export interface KoraDelivery {
 
 // ─── Catalog Configuration ──────────────────────────────────────────────────
 
-export interface KoraCatalog {
+export interface MsingiCatalog {
   requireKEBSCertification?: boolean;
   enableSerialVerification?: boolean; // IMEI/serial check
   maxComparisonProducts: number;
@@ -194,7 +194,7 @@ export interface KoraCatalog {
 
 export type SupportedLanguage = 'en' | 'sw' | 'fr' | 'am' | 'zu' | 'ha' | 'yo' | 'ig';
 
-export interface KoraContent {
+export interface MsingiContent {
   languages: SupportedLanguage[];
   defaultLanguage: SupportedLanguage;
   blog: boolean;
@@ -205,7 +205,7 @@ export interface KoraContent {
 
 // ─── Infrastructure ─────────────────────────────────────────────────────────
 
-export interface KoraInfrastructure {
+export interface MsingiInfrastructure {
   search: {
     provider: 'meilisearch' | 'algolia' | 'typesense';
     host?: string;
@@ -233,7 +233,7 @@ export interface KoraInfrastructure {
 
 // ─── SEO Configuration ──────────────────────────────────────────────────────
 
-export interface KoraSEO {
+export interface MsingiSEO {
   siteName: string;
   titleTemplate: string; // e.g. "%s | Jenga Electronics"
   defaultDescription: string;
@@ -245,15 +245,15 @@ export interface KoraSEO {
 
 // ─── The Master Configuration ───────────────────────────────────────────────
 
-export interface KoraConfig {
-  instance: KoraInstance;
-  branding: KoraBranding;
-  business: KoraBusiness;
-  modules: KoraModules;
-  payments: KoraPayments;
-  delivery: KoraDelivery;
-  catalog: KoraCatalog;
-  content: KoraContent;
-  infrastructure: KoraInfrastructure;
-  seo: KoraSEO;
+export interface MsingiConfig {
+  instance: MsingiInstance;
+  branding: MsingiBranding;
+  business: MsingiBusiness;
+  modules: MsingiModules;
+  payments: MsingiPayments;
+  delivery: MsingiDelivery;
+  catalog: MsingiCatalog;
+  content: MsingiContent;
+  infrastructure: MsingiInfrastructure;
+  seo: MsingiSEO;
 }

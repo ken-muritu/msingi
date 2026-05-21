@@ -1,5 +1,5 @@
 {
-  "name": "@kora/web",
+  "name": "@msingi/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
-    "@kora/types": "workspace:*",
-    "@kora/config": "workspace:*",
+    "@msingi/types": "workspace:*",
+    "@msingi/config": "workspace:*",
     "@fontsource/inter": "^5.2.8",
     "clsx": "^2.1.1",
     "lucide-react": "^0.378.0",

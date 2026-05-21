@@ -1,5 +1,5 @@
 {
-  "name": "@kora/backend",
+  "name": "@msingi/backend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -16,8 +16,8 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@kora/types": "workspace:*",
-    "@kora/config": "workspace:*",
+    "@msingi/types": "workspace:*",
+    "@msingi/config": "workspace:*",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.0",
     "@nestjs/core": "^10.3.0",

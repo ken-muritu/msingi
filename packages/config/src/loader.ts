@@ -1,4 +1,4 @@
-import type { KoraConfig } from '@kora/types';
+import type { MsingiConfig } from '@msingi/types';
 import { defaultConfig } from './defaults';
 
 function deepMerge<T extends Record<string, unknown>>(
@@ -32,13 +32,13 @@ function deepMerge<T extends Record<string, unknown>>(
   return result;
 }
 
-let _config: KoraConfig | null = null;
+let _config: MsingiConfig | null = null;
 
-export function defineConfig(userConfig: KoraConfig): KoraConfig {
+export function defineConfig(userConfig: MsingiConfig): MsingiConfig {
   const merged = deepMerge(
     defaultConfig as Record<string, unknown>,
     userConfig as unknown as Record<string, unknown>
-  ) as unknown as KoraConfig;
+  ) as unknown as MsingiConfig;
 
   // Ensure core is always true
   merged.modules.core = true;
@@ -47,17 +47,17 @@ export function defineConfig(userConfig: KoraConfig): KoraConfig {
   return merged;
 }
 
-export function getConfig(): KoraConfig {
+export function getConfig(): MsingiConfig {
   if (!_config) {
     throw new Error(
-      '[Kora] Configuration not loaded. Call defineConfig() with your kora.config.ts first.'
+      '[Msingi] Configuration not loaded. Call defineConfig() with your msingi.config.ts first.'
     );
   }
   return _config;
 }
 
 export function isModuleEnabled(
-  module: keyof KoraConfig['modules']
+  module: keyof MsingiConfig['modules']
 ): boolean {
   const config = getConfig();
   const value = config.modules[module];

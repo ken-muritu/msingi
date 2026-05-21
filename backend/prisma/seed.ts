@@ -6,7 +6,7 @@ import * as path from 'path';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🎵 Seeding Kora database (Jenga Electronics template)...\n');
+  console.log('🎵 Seeding Msingi database (Jenga Electronics template)...\n');
 
   // Load electronics template
   const categoriesPath = path.join(__dirname, '../../templates/electronics/categories.json');
@@ -20,7 +20,7 @@ async function main() {
     create: {
       email: 'admin@jenga.co.ke',
       phone: '+254700000001',
-      name: 'Kora Admin',
+      name: 'Msingi Admin',
       passwordHash: adminPassword,
       role: 'super_admin',
       emailVerified: true,
@@ -180,7 +180,7 @@ async function main() {
   });
   console.log('✅ Test buyer created:', buyer.email);
 
-  console.log('\n🎵 Kora database seeded successfully!');
+  console.log('\n🎵 Msingi database seeded successfully!');
   console.log('───────────────────────────────────────');
   console.log('Admin login:  admin@jenga.co.ke / admin123456');
   console.log('Seller login: samsung@jenga.co.ke / seller123456');

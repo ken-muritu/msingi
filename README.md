@@ -1,15 +1,15 @@
-# KORA
+# MSINGI
 
-**Modular Commerce Infrastructure for African Business**
+**The Commerce Foundation for African Business**
 
-> Build once, deploy for any African commerce vertical. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
+> Deploy a complete African commerce business in weeks, not months. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
 
-## What is Kora?
+## What is Msingi?
 
-Kora is a modular commerce framework purpose-built for African commerce behavior. Think **"Laravel for African commerce"** — a foundation that handles the hard problems (M-PESA, WhatsApp, logistics, trust) so you focus on your business.
+Msingi (Swahili: "foundation") is a modular commerce framework purpose-built for African commerce behavior. Think **"Laravel for African commerce"** — a foundation that handles the hard problems (M-PESA, WhatsApp, logistics, trust) so you focus on your business.
 
-**Kora is NOT:** a hosted SaaS, a marketplace, a WordPress plugin, or a boilerplate.
-**Kora IS:** infrastructure, modules, commerce primitives, operational systems.
+**Msingi is NOT:** a hosted SaaS, a marketplace, a WordPress plugin, or a boilerplate.
+**Msingi IS:** infrastructure, modules, commerce primitives, operational systems.
 
 ## Architecture
 
@@ -30,23 +30,23 @@ Modular monolith (Turborepo monorepo) — single deployable with module composab
 ## Monorepo Structure
 
 ```
-kora/
+msingi/
 ├── apps/web/              # Next.js storefront (PWA)
 ├── backend/               # NestJS API server
 │   ├── src/modules/
-│   │   ├── auth/          # Kora Auth — phone OTP, email, roles
-│   │   ├── catalog/       # Kora Catalog — products, categories, variants
-│   │   ├── inventory/     # Kora Inventory — stock, reservations, logs
-│   │   ├── orders/        # Kora Orders — cart, checkout, lifecycle
-│   │   ├── payments/      # Kora Pay — M-PESA STK Push, cards, BNPL
-│   │   ├── sellers/       # Kora Merchant — seller portal, KYC, payouts
-│   │   ├── search/        # Kora Search — typo-tolerant, faceted
-│   │   ├── reviews/       # Kora Reviews — verified, social proof
-│   │   └── notifications/ # Kora Notifications — WhatsApp, SMS, email
+│   │   ├── auth/          # Msingi Auth — phone OTP, email, roles
+│   │   ├── catalog/       # Msingi Catalog — products, categories, variants
+│   │   ├── inventory/     # Msingi Inventory — stock, reservations, logs
+│   │   ├── orders/        # Msingi Orders — cart, checkout, lifecycle
+│   │   ├── payments/      # Msingi Pay — M-PESA STK Push, cards, BNPL
+│   │   ├── sellers/       # Msingi Merchant — seller portal, KYC, payouts
+│   │   ├── search/        # Msingi Search — typo-tolerant, faceted
+│   │   ├── reviews/       # Msingi Reviews — verified, social proof
+│   │   └── notifications/ # Msingi Notifications — WhatsApp, SMS, email
 │   └── prisma/            # Database schema
 ├── packages/
-│   ├── types/             # @kora/types — shared TypeScript types
-│   └── config/            # @kora/config — configuration loader
+│   ├── types/             # @msingi/types — shared TypeScript types
+│   └── config/            # @msingi/config — configuration loader
 ├── templates/             # Vertical templates (electronics, fashion, etc.)
 ├── jenga.config.ts        # Reference implementation config
 └── turbo.json
@@ -56,19 +56,19 @@ kora/
 
 | Module | Status | Description |
 |--------|--------|-------------|
-| **Kora Auth** | ✅ | Authentication, roles, JWT |
-| **Kora Catalog** | ✅ | Products, categories, variants, brands |
-| **Kora Inventory** | ✅ | Transactional stock, reservations, logs |
-| **Kora Orders** | ✅ | Order lifecycle, multi-seller splitting |
-| **Kora Pay** | ✅ | M-PESA STK Push, cards, refunds |
-| **Kora Search** | ✅ | Full-text, autocomplete, facets |
-| **Kora Reviews** | ✅ | Verified purchase reviews, seller response |
-| **Kora Notifications** | ✅ | WhatsApp, SMS, email |
-| **Kora Merchant** | ✅ | Seller onboarding, dashboard, payouts |
+| **Msingi Auth** | ✅ | Authentication, roles, JWT |
+| **Msingi Catalog** | ✅ | Products, categories, variants, brands |
+| **Msingi Inventory** | ✅ | Transactional stock, reservations, logs |
+| **Msingi Orders** | ✅ | Order lifecycle, multi-seller splitting |
+| **Msingi Pay** | ✅ | M-PESA STK Push, cards, refunds |
+| **Msingi Search** | ✅ | Full-text, autocomplete, facets |
+| **Msingi Reviews** | ✅ | Verified purchase reviews, seller response |
+| **Msingi Notifications** | ✅ | WhatsApp, SMS, email |
+| **Msingi Merchant** | ✅ | Seller onboarding, dashboard, payouts |
 
 ## Reference Implementation
 
-**Jenga Electronics** — Kenya's premier electronics marketplace, built on Kora.
+**Jenga Electronics** — Kenya's premier electronics marketplace, built on Msingi.
 
 ## Getting Started
 
@@ -107,13 +107,13 @@ Swagger UI available at `http://localhost:4000/api/docs`
 
 ## Configuration System
 
-Every Kora deployment is driven by a single config file:
+Every Msingi deployment is driven by a single config file:
 
 ```typescript
 // jenga.config.ts
-import type { KoraConfig } from '@kora/types';
+import type { MsingiConfig } from '@msingi/types';
 
-const config: KoraConfig = {
+const config: MsingiConfig = {
   instance: { name: 'Jenga Electronics', slug: 'jenga', vertical: 'electronics' },
   modules: { core: true, marketplace: true, bnpl: true, dispatch: true },
   payments: { mpesa: { stkPush: true, paybill: '247247' } },

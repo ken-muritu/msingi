@@ -9,7 +9,7 @@ export class HealthController {
   check() {
     return {
       status: 'ok',
-      framework: 'kora',
+      framework: 'msingi',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
     };

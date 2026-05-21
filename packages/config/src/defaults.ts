@@ -1,6 +1,6 @@
-import type { KoraConfig } from '@kora/types';
+import type { MsingiConfig } from '@msingi/types';
 
-export const defaultConfig: Partial<KoraConfig> = {
+export const defaultConfig: Partial<MsingiConfig> = {
   branding: {
     logo: '/brand/logo.svg',
     favicon: '/brand/favicon.png',
@@ -19,7 +19,7 @@ export const defaultConfig: Partial<KoraConfig> = {
       body: 'Inter',
       mono: 'JetBrains Mono',
     },
-    poweredByKora: true,
+    poweredByMsingi: true,
   },
   business: {
     type: 'solo',

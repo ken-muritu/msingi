@@ -1,4 +1,4 @@
-// ─── Kora Commerce Entity Types ─────────────────────────────────────────────
+// ─── Msingi Commerce Entity Types ─────────────────────────────────────────────
 // Generic commerce primitives. No vertical-specific fields.
 // Vertical specifics live in product.attributes (JSONB).
 

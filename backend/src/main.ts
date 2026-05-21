@@ -28,8 +28,8 @@ async function bootstrap() {
 
   // Swagger API documentation
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Kora Commerce API')
-    .setDescription('Modular Commerce Infrastructure for African Business')
+    .setTitle('Msingi Commerce API')
+    .setDescription('The Commerce Foundation for African Business')
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication & authorization')
@@ -49,7 +49,7 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
 
-  console.log(`🎵 Kora API running on http://localhost:${port}`);
+  console.log(`�️ Msingi API running on http://localhost:${port}`);
   console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
 }
 

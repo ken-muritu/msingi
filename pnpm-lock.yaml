@@ -20,10 +20,10 @@ importers:
       '@fontsource/inter':
         specifier: ^5.2.8
         version: 5.2.8
-      '@kora/config':
+      '@msingi/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@kora/types':
+      '@msingi/types':
         specifier: workspace:*
         version: link:../../packages/types
       clsx:
@@ -78,10 +78,10 @@ importers:
 
   backend:
     dependencies:
-      '@kora/config':
+      '@msingi/config':
         specifier: workspace:*
         version: link:../packages/config
-      '@kora/types':
+      '@msingi/types':
         specifier: workspace:*
         version: link:../packages/types
       '@nestjs/bull':
@@ -166,7 +166,7 @@ importers:
 
   packages/config:
     dependencies:
-      '@kora/types':
+      '@msingi/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
