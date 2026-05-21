@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { SlidersHorizontal, X, ChevronDown } from 'lucide-react'
 import { products as staticProducts, categories } from '@/lib/data'
 import { useSellerProductsStore } from '@/lib/store'
+import { useProducts } from '@/lib/hooks'
 import ProductCard from '@/components/products/ProductCard'
 import { Suspense } from 'react'
 
@@ -24,7 +25,11 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState('relevance')
 
   const sellerProducts = useSellerProductsStore((s) => s.products)
-  const allProducts = useMemo(() => [...staticProducts, ...sellerProducts], [sellerProducts])
+  const { data: apiProducts, loading, isLive } = useProducts()
+  const allProducts = useMemo(() => {
+    const base = isLive ? apiProducts : staticProducts
+    return [...base, ...sellerProducts]
+  }, [apiProducts, sellerProducts, isLive])
   const brands = useMemo(() => [...new Set(allProducts.map((p) => p.brand))].sort(), [allProducts])
 
   const categoryParam = searchParams.get('category') ?? ''
