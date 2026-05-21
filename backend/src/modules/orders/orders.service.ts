@@ -45,6 +45,7 @@ export class OrdersService {
           include: {
             seller: { select: { id: true, businessName: true } },
             variants: item.variantId ? { where: { id: item.variantId } } : undefined,
+            images: { where: { isPrimary: true }, take: 1 },
           },
         });
 

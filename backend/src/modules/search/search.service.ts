@@ -21,13 +21,22 @@ export class SearchService {
     const {
       category,
       brand,
-      minPrice,
-      maxPrice,
+      minPrice: rawMinPrice,
+      maxPrice: rawMaxPrice,
       inStock,
       sortBy = 'relevance',
-      page = 1,
-      pageSize = 20,
+      page: rawPage = 1,
+      pageSize: rawPageSize = 20,
     } = filters || {};
+
+    const page = Number(rawPage) || 1;
+    const pageSize = Number(rawPageSize) || 20;
+    const minPrice = rawMinPrice !== undefined ? Number(rawMinPrice) : undefined;
+    const maxPrice = rawMaxPrice !== undefined ? Number(rawMaxPrice) : undefined;
+
+    const priceFilter: Record<string, number> = {};
+    if (minPrice !== undefined && !isNaN(minPrice)) priceFilter.gte = minPrice;
+    if (maxPrice !== undefined && !isNaN(maxPrice)) priceFilter.lte = maxPrice;
 
     const where: any = {
       status: 'active',
@@ -39,8 +48,7 @@ export class SearchService {
       ],
       ...(category && { category: { slug: category } }),
       ...(brand?.length && { brand: { in: brand } }),
-      ...(minPrice !== undefined && { price: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { price: { lte: maxPrice } }),
+      ...(Object.keys(priceFilter).length > 0 && { price: priceFilter }),
       ...(inStock && { stockCount: { gt: 0 } }),
     };
 

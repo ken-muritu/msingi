@@ -57,7 +57,9 @@ export class SellersService {
     return seller;
   }
 
-  async listSellers(page = 1, pageSize = 20, status?: string) {
+  async listSellers(rawPage = 1, rawPageSize = 20, status?: string) {
+    const page = Number(rawPage) || 1;
+    const pageSize = Number(rawPageSize) || 20;
     const where = status ? { status } : {};
     const [sellers, total] = await Promise.all([
       this.prisma.seller.findMany({

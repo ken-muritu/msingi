@@ -22,12 +22,12 @@ export class CatalogService {
     search?: string;
   }) {
     const {
-      page = 1,
-      pageSize = 20,
+      page: rawPage = 1,
+      pageSize: rawPageSize = 20,
       categoryId,
       brand,
-      minPrice,
-      maxPrice,
+      minPrice: rawMinPrice,
+      maxPrice: rawMaxPrice,
       inStock,
       isFeatured,
       isFlashSale,
@@ -35,12 +35,20 @@ export class CatalogService {
       search,
     } = params;
 
+    const page = Number(rawPage) || 1;
+    const pageSize = Number(rawPageSize) || 20;
+    const minPrice = rawMinPrice !== undefined ? Number(rawMinPrice) : undefined;
+    const maxPrice = rawMaxPrice !== undefined ? Number(rawMaxPrice) : undefined;
+
+    const priceFilter: Record<string, number> = {};
+    if (minPrice !== undefined && !isNaN(minPrice)) priceFilter.gte = minPrice;
+    if (maxPrice !== undefined && !isNaN(maxPrice)) priceFilter.lte = maxPrice;
+
     const where: Prisma.ProductWhereInput = {
       status: 'active',
       ...(categoryId && { categoryId }),
       ...(brand && { brand }),
-      ...(minPrice !== undefined && { price: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { price: { ...((where as any)?.price || {}), lte: maxPrice } }),
+      ...(Object.keys(priceFilter).length > 0 && { price: priceFilter }),
       ...(inStock !== undefined && { stockCount: inStock ? { gt: 0 } : { equals: 0 } }),
       ...(isFeatured !== undefined && { isFeatured }),
       ...(isFlashSale !== undefined && { isFlashSale }),
