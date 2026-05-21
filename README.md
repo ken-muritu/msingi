@@ -1,106 +1,124 @@
-# Jenga Electronics Store
+# KORA
 
-A modern multi-vendor electronics marketplace built for the Kenyan market. Built with Next.js 14, Tailwind CSS, and Zustand.
+**Modular Commerce Infrastructure for African Business**
 
-> **Live demo:** [https://electronicsstore.vercel.app](https://electronicsstore.vercel.app)
+> Build once, deploy for any African commerce vertical. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
 
-## Features
+## What is Kora?
 
-- **Multi-vendor marketplace** — verified sellers with badges (Basic, Verified, Premium, Authorized)
-- **M-PESA integration** — STK Push payment simulation at checkout
-- **WhatsApp commerce** — direct WhatsApp ordering for any product or full cart
-- **Product catalog** — smartphones, laptops, TVs, fridges, audio, and more
-- **Flash sales** — countdown timer with discounted products
-- **BNPL** — buy now, pay later monthly installment display
-- **Loyalty points** — Gold/Platinum membership tiers
-- **Responsive UI** — mobile-first design with Tailwind CSS
-- **Cart persistence** — Zustand with `localStorage` persist middleware
-- **Admin dashboard** — platform-wide analytics, seller management, order tracking
-- **Seller dashboard** — revenue stats, order management, product catalog
-- **PWA ready** — web app manifest and meta tags
+Kora is a modular commerce framework purpose-built for African commerce behavior. Think **"Laravel for African commerce"** — a foundation that handles the hard problems (M-PESA, WhatsApp, logistics, trust) so you focus on your business.
 
-## Pages
+**Kora is NOT:** a hosted SaaS, a marketplace, a WordPress plugin, or a boilerplate.
+**Kora IS:** infrastructure, modules, commerce primitives, operational systems.
 
-| Route | Description |
-|-------|-------------|
-| `/` | Home — hero, categories, flash sales, featured, trending |
-| `/products` | Product listing with filters & sorting |
-| `/products/[id]` | Product detail with specs, reviews, M-PESA checkout |
-| `/cart` | Shopping cart with WhatsApp order option |
-| `/checkout` | Multi-step checkout (delivery → payment → confirm) |
-| `/account` | Customer orders, profile, loyalty points |
-| `/seller/dashboard` | Seller analytics and order management |
-| `/admin` | Admin platform overview, sellers, orders |
+## Architecture
 
-## Tech Stack
+Modular monolith (Turborepo monorepo) — single deployable with module composability.
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Styling | Tailwind CSS |
-| State | Zustand (with persist) |
-| Icons | Lucide React |
-| Language | TypeScript |
-| Deployment | Vercel |
+| Frontend | Next.js 14 (App Router) + Tailwind CSS |
+| Backend | NestJS + Prisma ORM |
+| Database | PostgreSQL |
+| Search | MeiliSearch |
+| Cache/Queue | Redis + BullMQ |
+| Payments | M-PESA (Daraja) + Pesapal + Stripe |
+| Analytics | PostHog |
+| Storage | Cloudflare R2 / S3 |
+| Infra | Docker + Turborepo |
+
+## Monorepo Structure
+
+```
+kora/
+├── apps/web/              # Next.js storefront (PWA)
+├── backend/               # NestJS API server
+│   ├── src/modules/
+│   │   ├── auth/          # Kora Auth — phone OTP, email, roles
+│   │   ├── catalog/       # Kora Catalog — products, categories, variants
+│   │   ├── inventory/     # Kora Inventory — stock, reservations, logs
+│   │   ├── orders/        # Kora Orders — cart, checkout, lifecycle
+│   │   ├── payments/      # Kora Pay — M-PESA STK Push, cards, BNPL
+│   │   ├── sellers/       # Kora Merchant — seller portal, KYC, payouts
+│   │   ├── search/        # Kora Search — typo-tolerant, faceted
+│   │   ├── reviews/       # Kora Reviews — verified, social proof
+│   │   └── notifications/ # Kora Notifications — WhatsApp, SMS, email
+│   └── prisma/            # Database schema
+├── packages/
+│   ├── types/             # @kora/types — shared TypeScript types
+│   └── config/            # @kora/config — configuration loader
+├── templates/             # Vertical templates (electronics, fashion, etc.)
+├── jenga.config.ts        # Reference implementation config
+└── turbo.json
+```
+
+## Core Modules
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| **Kora Auth** | ✅ | Authentication, roles, JWT |
+| **Kora Catalog** | ✅ | Products, categories, variants, brands |
+| **Kora Inventory** | ✅ | Transactional stock, reservations, logs |
+| **Kora Orders** | ✅ | Order lifecycle, multi-seller splitting |
+| **Kora Pay** | ✅ | M-PESA STK Push, cards, refunds |
+| **Kora Search** | ✅ | Full-text, autocomplete, facets |
+| **Kora Reviews** | ✅ | Verified purchase reviews, seller response |
+| **Kora Notifications** | ✅ | WhatsApp, SMS, email |
+| **Kora Merchant** | ✅ | Seller onboarding, dashboard, payouts |
+
+## Reference Implementation
+
+**Jenga Electronics** — Kenya's premier electronics marketplace, built on Kora.
 
 ## Getting Started
 
-```bash
-npm install
-npm run dev
-```
+### Prerequisites
 
-Open [http://localhost:3000](http://localhost:3000).
+- Node.js 18+
+- pnpm 9+
+- PostgreSQL 15+
 
-## Environment
-
-No environment variables required for the base setup. All data is mock/static.
-
-## Deployment
-
-Configured for Vercel. Push to GitHub and import the repo on [vercel.com](https://vercel.com).
+### Install
 
 ```bash
-npm run build   # verify build locally
+pnpm install
 ```
 
-## Project Structure
+### Setup database
 
+```bash
+cp backend/.env.example backend/.env
+# Edit backend/.env with your PostgreSQL connection string
+pnpm db:generate
+pnpm db:push
 ```
-app/                        # Next.js App Router pages
-  page.tsx                  # Home
-  layout.tsx                # Root layout
-  globals.css               # Global styles
-  not-found.tsx             # 404
-  cart/page.tsx
-  checkout/page.tsx
-  account/page.tsx
-  products/page.tsx
-  products/[id]/page.tsx
-  seller/dashboard/page.tsx
-  admin/page.tsx
-components/
-  layout/
-    Navbar.tsx              # Top navigation with cart badge
-    Footer.tsx              # Site-wide footer
-    CartSidebar.tsx         # Slide-out cart drawer
-  home/
-    HeroBanner.tsx          # Hero carousel / CTA
-    CategoryGrid.tsx        # Product category icons
-    FlashSales.tsx          # Countdown timer deals
-    FeaturedProducts.tsx    # Curated product grid
-    TrendingSection.tsx     # Trending items
-    WhatsAppCTA.tsx         # WhatsApp order call-to-action
-  products/
-    ProductCard.tsx         # Reusable product tile
-  checkout/
-    MPesaModal.tsx          # M-PESA STK Push modal
-lib/
-  data.ts                   # Mock data & TypeScript types
-  store.ts                  # Zustand cart store
-  utils.ts                  # KES formatting, WhatsApp helpers, etc.
-public/
-  manifest.json             # PWA manifest
+
+### Run development
+
+```bash
+pnpm dev          # Runs both frontend + backend
+pnpm dev:web      # Frontend only (port 3000)
+pnpm dev:backend  # Backend only (port 4000)
+```
+
+### API Documentation
+
+Swagger UI available at `http://localhost:4000/api/docs`
+
+## Configuration System
+
+Every Kora deployment is driven by a single config file:
+
+```typescript
+// jenga.config.ts
+import type { KoraConfig } from '@kora/types';
+
+const config: KoraConfig = {
+  instance: { name: 'Jenga Electronics', slug: 'jenga', vertical: 'electronics' },
+  modules: { core: true, marketplace: true, bnpl: true, dispatch: true },
+  payments: { mpesa: { stkPush: true, paybill: '247247' } },
+  // ... full config
+};
 ```
 
 ## License

@@ -1,0 +1,362 @@
+// ─── Kora Commerce Data Model ───────────────────────────────────────────────
+// Generic commerce primitives. No vertical-specific columns.
+// Vertical data lives in `attributes` (Json) fields.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ───────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  phone         String?  @unique
+  name          String
+  avatar        String?
+  passwordHash  String?
+  role          String   @default("buyer") // buyer, seller, admin, super_admin
+  authProvider  String   @default("email") // phone, email, google, apple
+  emailVerified Boolean  @default(false)
+  phoneVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  seller        Seller?
+  orders        Order[]
+  reviews       Review[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+// ─── Sellers ────────────────────────────────────────────────────────────────
+
+model Seller {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  businessName   String
+  slug           String   @unique
+  description    String   @default("")
+  logo           String?
+  coverImage     String?
+  badge          String   @default("basic") // basic, verified, premium, authorized
+  status         String   @default("pending") // pending, active, suspended, deactivated
+  verified       Boolean  @default(false)
+  rating         Float    @default(0)
+  reviewCount    Int      @default(0)
+  salesCount     Int      @default(0)
+  productCount   Int      @default(0)
+  location       String   @default("")
+  county         String   @default("")
+  responseTime   String   @default("")
+  commissionRate Float    @default(8.5)
+  mpesaPaybill   String?
+  bankAccount    String?
+  kycDocuments   String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  products Product[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([badge])
+}
+
+// ─── Categories ─────────────────────────────────────────────────────────────
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  icon         String?
+  image        String?
+  parentId     String?
+  sortOrder    Int      @default(0)
+  productCount Int      @default(0)
+  isActive     Boolean  @default(true)
+  metadata     Json?
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive])
+}
+
+// ─── Products ───────────────────────────────────────────────────────────────
+
+model Product {
+  id                   String   @id @default(cuid())
+  sellerId             String
+  name                 String
+  slug                 String   @unique
+  description          String   @default("")
+  brand                String?
+  categoryId           String
+  status               String   @default("draft") // draft, active, inactive, archived
+  price                Int      // Stored in smallest currency unit (cents/centimes) or whole KES
+  compareAtPrice       Int?
+  costPrice            Int?
+  features             String[] @default([])
+  attributes           Json?    // Vertical-specific data (IMEI, screen size, color, etc.)
+  specifications       Json?    // Key-value spec pairs
+  tags                 String[] @default([])
+  warranty             String?
+  weight               Int?     // grams
+  dimensionLength      Float?   // cm
+  dimensionWidth       Float?   // cm
+  dimensionHeight      Float?   // cm
+  requiresInstallation Boolean  @default(false)
+  installationFee      Int?
+  bnplAvailable        Boolean  @default(false)
+  monthlyInstallment   Int?
+  rating               Float    @default(0)
+  reviewCount          Int      @default(0)
+  salesCount           Int      @default(0)
+  stockCount           Int      @default(0)
+  lowStockThreshold    Int      @default(5)
+  isFeatured           Boolean  @default(false)
+  isFlashSale          Boolean  @default(false)
+  flashSalePrice       Int?
+  flashSaleEndsAt      DateTime?
+  seoTitle             String?
+  seoDescription       String?
+  deliveryEstimate     String   @default("2-5 business days")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  seller        Seller          @relation(fields: [sellerId], references: [id])
+  category      Category        @relation(fields: [categoryId], references: [id])
+  images        ProductImage[]
+  variants      ProductVariant[]
+  reviews       Review[]
+  inventoryLogs InventoryLog[]
+  orderItems    OrderItem[]
+
+  @@index([slug])
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([brand])
+  @@index([price])
+  @@index([isFeatured])
+  @@index([isFlashSale])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// ─── Product Images ─────────────────────────────────────────────────────────
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+  isPrimary Boolean @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// ─── Product Variants ───────────────────────────────────────────────────────
+
+model ProductVariant {
+  id             String  @id @default(cuid())
+  productId      String
+  sku            String  @unique
+  name           String  // e.g. "256GB / Titanium Black"
+  price          Int
+  compareAtPrice Int?
+  costPrice      Int?
+  stockCount     Int     @default(0)
+  attributes     Json    // { color: "Black", storage: "256GB" }
+  isActive       Boolean @default(true)
+
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryLogs InventoryLog[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+// ─── Inventory Logs ─────────────────────────────────────────────────────────
+
+model InventoryLog {
+  id            String   @id @default(cuid())
+  productId     String
+  variantId     String?
+  action        String   // restock, sale, return, adjustment, reservation, reservation_release
+  quantity      Int      // positive = add, negative = subtract
+  previousStock Int
+  newStock      Int
+  reference     String?  // orderId, adjustmentId
+  note          String?
+  createdAt     DateTime @default(now())
+
+  product Product         @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId])
+  @@index([variantId])
+  @@index([createdAt])
+}
+
+// ─── Orders ─────────────────────────────────────────────────────────────────
+
+model Order {
+  id                  String   @id @default(cuid())
+  orderNumber         String   @unique
+  userId              String?
+  guestEmail          String?
+  guestPhone          String?
+  subtotal            Int
+  tax                 Int      @default(0)
+  deliveryFee         Int      @default(0)
+  discount            Int      @default(0)
+  total               Int
+  status              String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled, returned, refunded
+  paymentMethod       String   // mpesa, card, cash_on_delivery, bnpl
+  paymentStatus       String   @default("pending") // pending, processing, paid, failed, refunded, partially_refunded
+  shippingAddress     Json
+  billingAddress      Json?
+  mpesaTransactionId  String?
+  mpesaReceiptNumber  String?
+  cardTransactionId   String?
+  courierProvider     String?
+  trackingNumber      String?
+  estimatedDelivery   String?
+  notes               String?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+  transactions Transaction[]
+
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+// ─── Order Items ────────────────────────────────────────────────────────────
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+  sellerId  String
+  name      String
+  sku       String?
+  image     String  @default("")
+  price     Int
+  quantity  Int
+  total     Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([productId])
+}
+
+// ─── Transactions (Payments) ────────────────────────────────────────────────
+
+model Transaction {
+  id             String   @id @default(cuid())
+  orderId        String?
+  sellerId       String?
+  type           String   // payment, refund, payout, commission, fee
+  method         String   // mpesa, card, cash_on_delivery, bnpl
+  amount         Int
+  currency       String   @default("KES")
+  status         String   @default("initiated") // initiated, pending, completed, failed, reversed
+  providerRef    String?  // M-PESA receipt, Stripe charge ID
+  idempotencyKey String   @unique
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@index([createdAt])
+}
+
+// ─── Reviews ────────────────────────────────────────────────────────────────
+
+model Review {
+  id                 String    @id @default(cuid())
+  productId          String
+  userId             String
+  orderId            String?
+  rating             Int       // 1-5
+  title              String
+  body               String
+  images             String[]  @default([])
+  videoUrl           String?
+  isVerifiedPurchase Boolean   @default(false)
+  helpfulCount       Int       @default(0)
+  status             String    @default("pending") // pending, approved, rejected
+  sellerResponse     String?
+  sellerResponseAt   DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([productId, userId])
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([rating])
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+model Notification {
+  id           String    @id @default(cuid())
+  userId       String?
+  phone        String?
+  email        String?
+  channel      String    // whatsapp, sms, email, push
+  type         String    // order_confirmation, order_shipped, etc.
+  subject      String?
+  body         String
+  templateId   String?
+  templateData Json?
+  status       String    @default("queued") // queued, sent, delivered, failed
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([channel])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
