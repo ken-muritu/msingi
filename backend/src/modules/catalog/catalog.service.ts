@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SearchService } from '../search/search.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly searchService: SearchService,
+  ) {}
 
   // ─── Products ───────────────────────────────────────────────────────────────
 
@@ -133,18 +137,22 @@ export class CatalogService {
   }
 
   async createProduct(sellerId: string, data: Prisma.ProductCreateInput) {
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: { ...data, seller: { connect: { id: sellerId } } },
       include: { category: true, images: true, variants: true },
     });
+    this.searchService.indexProduct(product.id).catch(() => null);
+    return product;
   }
 
   async updateProduct(id: string, data: Prisma.ProductUpdateInput) {
-    return this.prisma.product.update({
+    const product = await this.prisma.product.update({
       where: { id },
       data,
       include: { category: true, images: true, variants: true },
     });
+    this.searchService.indexProduct(product.id).catch(() => null);
+    return product;
   }
 
   // ─── Categories ─────────────────────────────────────────────────────────────

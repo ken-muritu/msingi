@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Param, Query, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SellersService } from './sellers.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('sellers')
 @Controller('sellers')
@@ -14,6 +15,7 @@ export class SellersController {
     return this.sellersService.registerSeller(body.userId, body);
   }
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'List sellers' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -22,12 +24,14 @@ export class SellersController {
     return this.sellersService.listSellers(page, undefined, status);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get seller by ID' })
   getById(@Param('id') id: string) {
     return this.sellersService.getSeller(id);
   }
 
+  @Public()
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get seller by slug' })
   getBySlug(@Param('slug') slug: string) {

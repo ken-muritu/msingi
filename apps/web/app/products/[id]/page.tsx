@@ -13,7 +13,7 @@ import { getProductById, getRelatedProducts, reviews } from '@/lib/data'
 import { useCartStore, useRecentlyViewedStore, useSellerProductsStore } from '@/lib/store'
 import { formatKES, generateWhatsAppProductMessage } from '@/lib/utils'
 import ProductCard from '@/components/products/ProductCard'
-import MPesaModal from '@/components/checkout/MPesaModal'
+import { useRouter } from 'next/navigation'
 import { use } from 'react'
 
 interface PageProps {
@@ -46,12 +46,11 @@ function ProductDetail({
 }) {
   const [activeImage, setActiveImage] = useState(0)
   const [activeTab, setActiveTab] = useState<'specs' | 'reviews' | 'shipping'>('specs')
-  const [showMpesa, setShowMpesa] = useState(false)
   const [serialInput, setSerialInput] = useState('')
   const [serialStatus, setSerialStatus] = useState<'idle' | 'checking' | 'verified' | 'notfound'>('idle')
   const [installationAdded, setInstallationAdded] = useState(false)
-  const [orderConfirmed, setOrderConfirmed] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
+  const router = useRouter()
   const addRecent = useRecentlyViewedStore((s) => s.addItem)
 
   useEffect(() => {
@@ -246,7 +245,7 @@ function ProductDetail({
               Add to Cart
             </button>
             <button
-              onClick={() => setShowMpesa(true)}
+              onClick={() => { addItem({ id: product.id, name: product.name, price: totalPrice, image: product.images?.[0] || '', brand: product.brand, category: product.category, sellerId: product.seller.id, sellerName: product.seller.name }); router.push('/checkout') }}
               disabled={!product.inStock}
               className="flex-1 flex items-center justify-center gap-2 bg-[#00A651] hover:bg-[#008742] disabled:bg-slate-200 disabled:text-slate-400 text-white py-3.5 rounded-2xl font-semibold transition-colors"
             >
@@ -453,26 +452,6 @@ function ProductDetail({
         </div>
       )}
 
-      {/* M-PESA modal */}
-      {showMpesa && (
-        <MPesaModal
-          amount={totalPrice}
-          onClose={() => setShowMpesa(false)}
-          onSuccess={(txId) => {
-            setShowMpesa(false)
-            setOrderConfirmed(true)
-          }}
-        />
-      )}
-
-      {/* Order confirmed banner */}
-      {orderConfirmed && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-medium">
-          <CheckCircle2 size={18} />
-          Order confirmed! Check WhatsApp for updates.
-          <button onClick={() => setOrderConfirmed(false)} className="ml-2 text-white/70 hover:text-white">✕</button>
-        </div>
-      )}
     </div>
   )
 }

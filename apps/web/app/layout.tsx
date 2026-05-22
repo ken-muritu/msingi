@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import MsingiNav from '@/components/landing/MsingiNav'
 import MsingiFooter from '@/components/landing/MsingiFooter'
+import PostHogProvider from '@/components/providers/PostHogProvider'
 
 export const metadata: Metadata = {
   title: {
@@ -55,7 +57,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans bg-[#0A0A0A] text-white antialiased">
         <MsingiNav />
-        <main className="min-h-screen">{children}</main>
+        <Suspense fallback={null}>
+          <PostHogProvider>
+            <main className="min-h-screen">{children}</main>
+          </PostHogProvider>
+        </Suspense>
         <MsingiFooter />
       </body>
     </html>

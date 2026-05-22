@@ -1,11 +1,15 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   async register(data: {
     name: string;
@@ -27,6 +31,8 @@ export class AuthService {
     });
 
     const token = this.generateToken(user.id, user.role);
+
+    this.analytics.trackUserRegistered(user.id, data.email ? 'email' : 'phone');
 
     return {
       user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },

@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -13,10 +14,18 @@ export class PaymentsController {
     return this.paymentsService.initiateMpesaPayment(body.orderId, body.phone);
   }
 
+  @Public()
   @Post('mpesa/callback')
   @ApiOperation({ summary: 'M-PESA callback webhook (called by Safaricom)' })
   mpesaCallback(@Body() body: any) {
     return this.paymentsService.handleMpesaCallback(body);
+  }
+
+  @Public()
+  @Get('mpesa/query/:checkoutRequestId')
+  @ApiOperation({ summary: 'Poll M-PESA STK payment status' })
+  queryMpesaStatus(@Param('checkoutRequestId') checkoutRequestId: string) {
+    return this.paymentsService.queryMpesaStatus(checkoutRequestId);
   }
 
   @Get('transactions/:id')

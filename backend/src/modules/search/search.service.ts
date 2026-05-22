@@ -1,12 +1,116 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { MeiliSearch } = require('meilisearch');
+
+const PRODUCTS_INDEX = 'products';
 
 @Injectable()
-export class SearchService {
-  constructor(private readonly prisma: PrismaService) {}
+export class SearchService implements OnModuleInit {
+  private readonly logger = new Logger(SearchService.name);
+  private meili: any = null;
+  private meiliReady = false;
 
-  // In production: MeiliSearch integration
-  // For now: database-backed search with full-text capabilities
+  constructor(private readonly prisma: PrismaService) {
+    if (process.env.MEILISEARCH_HOST) {
+      this.meili = new MeiliSearch({
+        host: process.env.MEILISEARCH_HOST,
+        apiKey: process.env.MEILISEARCH_API_KEY || '',
+      });
+    }
+  }
+
+  async onModuleInit() {
+    if (!this.meili) return;
+    try {
+      await this.meili.index(PRODUCTS_INDEX).updateSettings({
+        searchableAttributes: ['name', 'brand', 'description', 'tags', 'categoryName'],
+        filterableAttributes: ['brand', 'categoryId', 'status', 'price', 'stockCount', 'isFlashSale', 'isFeatured'],
+        sortableAttributes: ['price', 'rating', 'salesCount', 'createdAt'],
+        rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness'],
+      });
+      this.meiliReady = true;
+      this.logger.log('MeiliSearch index configured');
+    } catch (err) {
+      this.logger.warn(`MeiliSearch not available, falling back to DB: ${err}`);
+    }
+  }
+
+  // ─── Index a product (called on create/update) ────────────────────────────
+
+  async indexProduct(productId: string) {
+    if (!this.meili || !this.meiliReady) return;
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: { select: { name: true, slug: true } },
+        images: { where: { isPrimary: true }, take: 1 },
+      },
+    });
+    if (!product) return;
+
+    await this.meili.index(PRODUCTS_INDEX).addDocuments([{
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      brand: product.brand,
+      description: product.description,
+      tags: product.tags,
+      categoryId: product.categoryId,
+      categoryName: product.category.name,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      rating: product.rating,
+      salesCount: product.salesCount,
+      stockCount: product.stockCount,
+      status: product.status,
+      isFeatured: product.isFeatured,
+      isFlashSale: product.isFlashSale,
+      image: product.images?.[0]?.url || '',
+      createdAt: product.createdAt.toISOString(),
+    }]);
+  }
+
+  async removeFromIndex(productId: string) {
+    if (!this.meili || !this.meiliReady) return;
+    await this.meili.index(PRODUCTS_INDEX).deleteDocument(productId);
+  }
+
+  async reindexAll() {
+    if (!this.meili || !this.meiliReady) return { skipped: true };
+    const products = await this.prisma.product.findMany({
+      where: { status: 'active' },
+      include: {
+        category: { select: { name: true, slug: true } },
+        images: { where: { isPrimary: true }, take: 1 },
+      },
+    });
+
+    const docs = products.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      brand: p.brand,
+      description: p.description,
+      tags: p.tags,
+      categoryId: p.categoryId,
+      categoryName: p.category.name,
+      price: p.price,
+      compareAtPrice: p.compareAtPrice,
+      rating: p.rating,
+      salesCount: p.salesCount,
+      stockCount: p.stockCount,
+      status: p.status,
+      isFeatured: p.isFeatured,
+      isFlashSale: p.isFlashSale,
+      image: p.images?.[0]?.url || '',
+      createdAt: p.createdAt.toISOString(),
+    }));
+
+    const task = await this.meili.index(PRODUCTS_INDEX).addDocuments(docs);
+    this.logger.log(`Reindex queued: taskUid=${task.taskUid}, ${docs.length} products`);
+    return { taskUid: task.taskUid, count: docs.length };
+  }
 
   async search(query: string, filters?: {
     category?: string;
@@ -139,7 +243,7 @@ export class SearchService {
 
     return {
       categories,
-      brands: brands.map((b) => ({ name: b.brand, count: b._count })),
+      brands: brands.map((b: any) => ({ name: b.brand, count: b._count })),
       priceRange: {
         min: priceRange._min.price || 0,
         max: priceRange._max.price || 0,

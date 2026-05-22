@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Param, Query, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CatalogService } from './catalog.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('catalog')
 @Controller()
@@ -9,6 +10,7 @@ export class CatalogController {
 
   // ─── Products ───────────────────────────────────────────────────────────────
 
+  @Public()
   @Get('products')
   @ApiOperation({ summary: 'List products with filters & pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -41,12 +43,14 @@ export class CatalogController {
     });
   }
 
+  @Public()
   @Get('products/:id')
   @ApiOperation({ summary: 'Get product by ID' })
   getProductById(@Param('id') id: string) {
     return this.catalogService.getProductById(id);
   }
 
+  @Public()
   @Get('products/slug/:slug')
   @ApiOperation({ summary: 'Get product by slug' })
   getProductBySlug(@Param('slug') slug: string) {
@@ -55,12 +59,14 @@ export class CatalogController {
 
   // ─── Categories ─────────────────────────────────────────────────────────────
 
+  @Public()
   @Get('categories')
   @ApiOperation({ summary: 'List all categories' })
   getCategories() {
     return this.catalogService.getCategories();
   }
 
+  @Public()
   @Get('categories/:slug')
   @ApiOperation({ summary: 'Get category by slug' })
   getCategoryBySlug(@Param('slug') slug: string) {
@@ -69,6 +75,7 @@ export class CatalogController {
 
   // ─── Brands ─────────────────────────────────────────────────────────────────
 
+  @Public()
   @Get('brands')
   @ApiOperation({ summary: 'List brands (optionally filtered by category)' })
   @ApiQuery({ name: 'categoryId', required: false })

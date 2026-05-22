@@ -65,8 +65,9 @@ msingi/
 | `apps/web/components/landing/` | `@msingi/web` | Framework landing page (8 components) |
 | `apps/web/components/home/` | `@msingi/web` | Store homepage (Jenga reference) |
 | `apps/web/lib/` | `@msingi/web` | API client, hooks, stores, utils |
-| `backend/src/modules/` | `@msingi/backend` | 10 NestJS domain modules |
-| `backend/prisma/` | `@msingi/backend` | Schema (12 models) + seed data |
+| `backend/src/modules/` | `@msingi/backend` | 12 NestJS domain modules + global AnalyticsModule |
+| `backend/src/types/` | `@msingi/backend` | Custom type declarations (`africastalking.d.ts`) |
+| `backend/prisma/` | `@msingi/backend` | Schema (14 models) + seed data |
 | `packages/types/src/` | `@msingi/types` | MsingiConfig + 20 interfaces |
 | `packages/config/src/` | `@msingi/config` | defineConfig, getConfig, formatPrice |
 
@@ -85,10 +86,17 @@ msingi/
 ### Backend (backend/)
 
 - **Framework**: NestJS 10 with modular architecture
-- **ORM**: Prisma with PostgreSQL
-- **Auth**: JWT + bcrypt, role-based (ADMIN, SELLER, BUYER)
+- **ORM**: Prisma with PostgreSQL (14 models)
+- **Auth**: JWT + bcrypt via global `JwtAuthGuard`; `@Public()` decorator for open endpoints
 - **API**: RESTful, all endpoints prefixed with `/api/v1/`
 - **Docs**: Swagger at `/api/docs`
+- **Payments**: Live M-PESA Daraja STK Push → callback → status query
+- **Notifications**: WhatsApp (Meta Cloud API) → SMS (Africa's Talking) fallback → Resend email
+- **Search**: MeiliSearch with DB fallback; auto-indexed on product create/update
+- **Storage**: Cloudflare R2 via `@aws-sdk/client-s3`
+- **Analytics**: PostHog server-side via `AnalyticsModule` (global, production-only)
+- **Queue**: BullMQ for async notification dispatch
+- **Cart**: API-persisted, session+user, guest→user merge on login
 
 ### Shared Packages
 
@@ -115,17 +123,26 @@ pnpm --filter @msingi/config build    # Build config package
 # Database
 pnpm db:push                          # Push schema to database
 pnpm --filter @msingi/backend db:seed # Seed reference data
+
+# Testing
+pnpm --filter @msingi/backend test       # Run 31 Jest unit tests
+pnpm --filter @msingi/backend test:cov   # With coverage report
+
+# Production
+pnpm --filter @msingi/backend start:migrate  # migrate + start (used in Docker CMD)
 ```
 
 ---
 
 ## Code Style
 
-- **TypeScript** everywhere — no `any` types
+- **TypeScript** everywhere — minimise `any` types
 - **Tailwind CSS** for styling — no custom CSS unless necessary
 - **NestJS conventions** — decorators, modules, services, controllers
 - **Prisma** for all database access — no raw SQL unless required
 - **Functional React** — hooks, no class components
+- **`@Public()` decorator** on any endpoint that should bypass JWT auth
+- **Non-blocking side effects** — analytics + notifications are fire-and-forget (`.catch(() => null)`)
 
 ---
 

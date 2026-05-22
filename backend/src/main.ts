@@ -19,10 +19,14 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
+  // CORS — accepts comma-separated origins via CORS_ORIGIN env var
+  const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim());
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 

@@ -10,12 +10,13 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
-    "@msingi/types": "workspace:*",
-    "@msingi/config": "workspace:*",
     "@fontsource/inter": "^5.2.8",
+    "@msingi/config": "workspace:*",
+    "@msingi/types": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.378.0",
     "next": "14.2.3",
+    "posthog-js": "^1.375.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.3.0",

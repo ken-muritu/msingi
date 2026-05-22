@@ -1,16 +1,26 @@
-import { Controller, Get, Post, Put, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Query, Body, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @Public()
   @Post()
-  @ApiOperation({ summary: 'Create a new order (checkout)' })
+  @ApiOperation({ summary: 'Create a new order (checkout) — works for guests and logged-in users' })
   createOrder(@Body() body: any) {
     return this.ordersService.createOrder(body);
+  }
+
+  @Get('my')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get orders for the currently logged-in user' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  getMyOrders(@Request() req: any, @Query('page') page?: number) {
+    return this.ordersService.getUserOrders(req.user.id, page);
   }
 
   @Get(':id')
@@ -19,6 +29,7 @@ export class OrdersController {
     return this.ordersService.getOrderById(id);
   }
 
+  @Public()
   @Get('number/:orderNumber')
   @ApiOperation({ summary: 'Get order by order number' })
   getOrderByNumber(@Param('orderNumber') orderNumber: string) {

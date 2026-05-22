@@ -1,35 +1,79 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Smartphone, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
-import { formatKES, generateMpesaTransactionId } from '@/lib/utils'
+import { formatKES } from '@/lib/utils'
+import { api } from '@/lib/api'
 
 type Step = 'input' | 'processing' | 'success' | 'failed'
 
 interface MPesaModalProps {
+  orderId: string
+  phone: string
   amount: number
   onClose: () => void
   onSuccess: (transactionId: string) => void
 }
 
-export default function MPesaModal({ amount, onClose, onSuccess }: MPesaModalProps) {
-  const [phone, setPhone] = useState('0700')
+export default function MPesaModal({ orderId, phone: defaultPhone, amount, onClose, onSuccess }: MPesaModalProps) {
+  const [phone, setPhone] = useState(defaultPhone || '0700')
   const [step, setStep] = useState<Step>('input')
-  const [transactionId, setTransactionId] = useState('')
+  const [checkoutRequestId, setCheckoutRequestId] = useState('')
+  const [receiptRef, setReceiptRef] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollCount = useRef(0)
+
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [])
+
+  const startPolling = (cid: string) => {
+    pollCount.current = 0
+    pollRef.current = setInterval(async () => {
+      pollCount.current += 1
+      if (pollCount.current > 30) { // 30 × 3s = 90s timeout
+        clearInterval(pollRef.current!)
+        setStep('failed')
+        setErrorMsg('Payment timed out. Please try again.')
+        return
+      }
+
+      try {
+        const result = await api.queryMpesaStatus(cid)
+        if (!result) return
+
+        if (result.isPaid) {
+          clearInterval(pollRef.current!)
+          setReceiptRef(cid)
+          setStep('success')
+          setTimeout(() => onSuccess(cid), 2000)
+        } else if (result.resultCode !== '0' && result.resultCode !== '' && pollCount.current > 2) {
+          clearInterval(pollRef.current!)
+          setStep('failed')
+          setErrorMsg(result.resultDesc || 'Payment failed or was cancelled.')
+        }
+      } catch { /* keep polling */ }
+    }, 3000)
+  }
 
   const handleSend = async () => {
-    const cleaned = phone.replace(/\s/g, '')
+    const cleaned = phone.replace(/[\s\D]/g, '')
     if (cleaned.length < 9) return
 
     setStep('processing')
+    setErrorMsg('')
 
-    await new Promise((r) => setTimeout(r, 3500))
+    try {
+      const result = await api.initiateMpesa(orderId, phone)
+      if (!result) throw new Error('Could not initiate M-PESA payment')
 
-    const txId = generateMpesaTransactionId()
-    setTransactionId(txId)
-    setStep('success')
-
-    setTimeout(() => onSuccess(txId), 2000)
+      setCheckoutRequestId(result.checkoutRequestId)
+      startPolling(result.checkoutRequestId)
+    } catch (err: any) {
+      setStep('failed')
+      setErrorMsg(err?.message || 'Failed to send STK push. Please try again.')
+    }
   }
 
   return (
@@ -131,7 +175,7 @@ export default function MPesaModal({ amount, onClose, onSuccess }: MPesaModalPro
                 <p className="text-sm text-slate-500 mt-1">Your order has been confirmed.</p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-800 font-mono">
-                Ref: {transactionId}
+                Ref: {receiptRef || checkoutRequestId}
               </div>
               <p className="text-xs text-slate-400">Redirecting to confirmation…</p>
             </div>
@@ -143,7 +187,7 @@ export default function MPesaModal({ amount, onClose, onSuccess }: MPesaModalPro
               <div>
                 <p className="font-bold text-slate-900">Payment Failed</p>
                 <p className="text-sm text-slate-500 mt-1">
-                  Transaction was cancelled or timed out. Please try again.
+                  {errorMsg || 'Transaction was cancelled or timed out. Please try again.'}
                 </p>
               </div>
               <button

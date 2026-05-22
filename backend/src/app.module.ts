@@ -11,6 +11,9 @@ import { SearchModule } from './modules/search/search.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthModule } from './modules/health/health.module';
+import { CartModule } from './modules/cart/cart.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { HealthModule } from './modules/health/health.module';
     SearchModule,
     ReviewsModule,
     NotificationsModule,
+    CartModule,
+    StorageModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

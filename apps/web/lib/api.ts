@@ -10,16 +10,31 @@ interface ApiOptions {
   headers?: Record<string, string>
   cache?: RequestCache
   revalidate?: number
+  token?: string
+}
+
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('msingi-auth-v1')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return parsed?.state?.token ?? null
+    }
+  } catch {}
+  return null
 }
 
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T | null> {
-  const { method = 'GET', body, headers = {}, cache, revalidate } = options
+  const { method = 'GET', body, headers = {}, cache, revalidate, token } = options
 
   try {
+    const authToken = token || getStoredToken()
     const fetchOptions: RequestInit & { next?: { revalidate: number } } = {
       method,
       headers: {
         'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...headers,
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
@@ -32,11 +47,26 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T | 
 
     const res = await fetch(`${API_BASE}${path}`, fetchOptions)
 
-    if (!res.ok) return null
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new ApiError(res.status, err?.message || res.statusText, err)
+    }
     return res.json()
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError) throw e
     // API not reachable — caller should fall back to mock data
     return null
+  }
+}
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public data?: any,
+  ) {
+    super(message)
+    this.name = 'ApiError'
   }
 }
 
@@ -165,6 +195,94 @@ export interface ApiAuthResponse {
   token: string
 }
 
+// ─── Cart Types ────────────────────────────────────────────────────────
+
+export interface ApiCartItem {
+  id: string
+  productId: string
+  variantId: string | null
+  name: string
+  brand: string | null
+  slug: string
+  price: number
+  compareAtPrice: number | null
+  image: string
+  quantity: number
+  lineTotal: number
+  seller: { id: string; businessName: string; badge: string }
+  stockCount: number
+}
+
+export interface ApiCart {
+  id: string
+  items: ApiCartItem[]
+  itemCount: number
+  subtotal: number
+  delivery: number
+  total: number
+}
+
+// ─── Order Types ────────────────────────────────────────────────────────
+
+export interface CreateOrderBody {
+  userId?: string
+  guestEmail?: string
+  guestPhone?: string
+  items: { productId: string; variantId?: string; quantity: number }[]
+  shippingAddress: {
+    name: string
+    phone: string
+    email?: string
+    addressLine1: string
+    addressLine2?: string
+    city: string
+    county: string
+    postalCode?: string
+    deliveryInstructions?: string
+  }
+  paymentMethod: 'mpesa' | 'card' | 'cash_on_delivery' | 'bnpl'
+}
+
+export interface ApiOrder {
+  id: string
+  orderNumber: string
+  status: string
+  paymentStatus: string
+  paymentMethod: string
+  subtotal: number
+  tax: number
+  deliveryFee: number
+  discount: number
+  total: number
+  shippingAddress: Record<string, string>
+  mpesaReceiptNumber: string | null
+  mpesaTransactionId: string | null
+  createdAt: string
+  items: Array<{
+    id: string
+    name: string
+    sku: string | null
+    image: string
+    price: number
+    quantity: number
+    total: number
+  }>
+}
+
+export interface ApiStkPushResponse {
+  transactionId: string
+  checkoutRequestId: string
+  merchantRequestId: string
+  message: string
+  status: string
+}
+
+export interface ApiStkQueryResponse {
+  resultCode: string
+  resultDesc: string
+  isPaid: boolean
+}
+
 // ─── API Methods ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -216,4 +334,59 @@ export const api = {
   // Health
   health: () =>
     apiFetch<{ status: string; framework: string; version: string }>('/health'),
+
+  // Cart
+  getCart: (sessionId?: string) =>
+    apiFetch<ApiCart>(`/cart${sessionId ? `?sessionId=${sessionId}` : ''}`),
+
+  addToCart: (body: { productId: string; variantId?: string; quantity?: number }, sessionId?: string) =>
+    apiFetch<ApiCart>(`/cart/items${sessionId ? `?sessionId=${sessionId}` : ''}`, {
+      method: 'POST',
+      body,
+    }),
+
+  updateCartItem: (itemId: string, quantity: number, sessionId?: string) =>
+    apiFetch<ApiCart>(`/cart/items/${itemId}${sessionId ? `?sessionId=${sessionId}` : ''}`, {
+      method: 'PUT',
+      body: { quantity },
+    }),
+
+  removeCartItem: (itemId: string, sessionId?: string) =>
+    apiFetch<ApiCart>(`/cart/items/${itemId}${sessionId ? `?sessionId=${sessionId}` : ''}`, {
+      method: 'DELETE',
+    }),
+
+  clearCart: (sessionId?: string) =>
+    apiFetch<{ success: boolean }>(`/cart${sessionId ? `?sessionId=${sessionId}` : ''}`, {
+      method: 'DELETE',
+    }),
+
+  mergeCart: (sessionId: string) =>
+    apiFetch<{ success: boolean }>('/cart/merge', {
+      method: 'POST',
+      body: { sessionId },
+    }),
+
+  // Orders
+  createOrder: (body: CreateOrderBody) =>
+    apiFetch<ApiOrder>('/orders', { method: 'POST', body }),
+
+  getOrder: (id: string) =>
+    apiFetch<ApiOrder>(`/orders/${id}`),
+
+  getOrderByNumber: (orderNumber: string) =>
+    apiFetch<ApiOrder>(`/orders/number/${orderNumber}`),
+
+  getMyOrders: (page = 1) =>
+    apiFetch<{ data: ApiOrder[]; total: number }>(`/orders/my?page=${page}`),
+
+  // Payments
+  initiateMpesa: (orderId: string, phone: string) =>
+    apiFetch<ApiStkPushResponse>('/payments/mpesa/stk-push', {
+      method: 'POST',
+      body: { orderId, phone },
+    }),
+
+  queryMpesaStatus: (checkoutRequestId: string) =>
+    apiFetch<ApiStkQueryResponse>(`/payments/mpesa/query/${checkoutRequestId}`),
 }

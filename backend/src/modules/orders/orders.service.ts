@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -8,6 +10,8 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
+    private readonly notifications: NotificationsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async createOrder(data: {
@@ -34,7 +38,7 @@ export class OrdersService {
   }) {
     const orderNumber = `KOR-${Date.now().toString(36).toUpperCase()}-${uuidv4().slice(0, 4).toUpperCase()}`;
 
-    return this.prisma.$transaction(async (tx) => {
+    const createdOrder = await this.prisma.$transaction(async (tx: any) => {
       // 1. Validate and price items from database (NEVER trust frontend prices)
       const orderItems = [];
       let subtotal = 0;
@@ -114,6 +118,27 @@ export class OrdersService {
 
       return order;
     });
+
+    // Fire order_created notification + analytics (non-blocking)
+    const address = data.shippingAddress as any;
+    const phone = address?.phone || data.guestPhone || '';
+    const email = data.guestEmail || address?.email || null;
+    if (phone) {
+      this.notifications
+        .sendOrderConfirmation(createdOrder.id, phone, email, createdOrder.orderNumber, createdOrder.total)
+        .catch(() => null);
+    }
+    this.analytics.trackOrderCreated({
+      userId: data.userId || null,
+      orderId: createdOrder.id,
+      orderNumber: createdOrder.orderNumber,
+      total: createdOrder.total,
+      itemCount: data.items.reduce((s, i) => s + i.quantity, 0),
+      paymentMethod: data.paymentMethod,
+      county: (data.shippingAddress as any).county || '',
+    });
+
+    return createdOrder;
   }
 
   async getOrderById(orderId: string) {

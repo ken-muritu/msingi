@@ -1,12 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from './search.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('search')
 @Controller('search')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Search products' })
   @ApiQuery({ name: 'q', required: true, description: 'Search query' })
@@ -32,10 +34,17 @@ export class SearchController {
     });
   }
 
+  @Public()
   @Get('autocomplete')
   @ApiOperation({ summary: 'Autocomplete search suggestions' })
   @ApiQuery({ name: 'q', required: true })
   autocomplete(@Query('q') q: string) {
     return this.searchService.autocomplete(q);
+  }
+
+  @Post('reindex')
+  @ApiOperation({ summary: 'Reindex all active products into MeiliSearch' })
+  reindexAll() {
+    return this.searchService.reindexAll();
   }
 }

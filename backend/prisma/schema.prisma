@@ -31,6 +31,7 @@ model User {
   orders        Order[]
   reviews       Review[]
   notifications Notification[]
+  cart          Cart?
 
   @@index([email])
   @@index([phone])
@@ -145,6 +146,7 @@ model Product {
   reviews       Review[]
   inventoryLogs InventoryLog[]
   orderItems    OrderItem[]
+  cartItems     CartItem[]
 
   @@index([slug])
   @@index([sellerId])
@@ -333,6 +335,37 @@ model Review {
   @@index([userId])
   @@index([status])
   @@index([rating])
+}
+
+// ─── Cart ──────────────────────────────────────────────────────────────────
+
+model Cart {
+  id        String     @id @default(cuid())
+  sessionId String?    @unique
+  userId    String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  items CartItem[]
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model CartItem {
+  id        String @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int    @default(1)
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+  @@index([productId])
 }
 
 // ─── Notifications ──────────────────────────────────────────────────────────

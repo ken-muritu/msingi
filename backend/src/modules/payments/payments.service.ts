@@ -1,10 +1,20 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MpesaService } from './mpesa.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PaymentsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mpesa: MpesaService,
+    private readonly notifications: NotificationsService,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   // ─── M-PESA STK Push ─────────────────────────────────────────────────────
 
@@ -12,9 +22,14 @@ export class PaymentsService {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new BadRequestException('Order not found');
 
-    const idempotencyKey = `mpesa-${orderId}-${Date.now()}`;
+    if (order.paymentStatus === 'paid') {
+      throw new BadRequestException('Order is already paid');
+    }
 
-    // Create transaction record
+    const idempotencyKey = `mpesa-${orderId}-${Date.now()}`;
+    const formattedPhone = this.mpesa.formatPhone(phone);
+
+    // Create pending transaction record
     const transaction = await this.prisma.transaction.create({
       data: {
         orderId,
@@ -25,64 +40,89 @@ export class PaymentsService {
         status: 'initiated',
         idempotencyKey,
         metadata: {
-          phone: this.formatKenyanPhone(phone),
+          phone: formattedPhone,
           accountReference: order.orderNumber,
         },
       },
     });
 
-    // In production: call Safaricom Daraja API here
-    // const stkResponse = await this.darajaClient.stkPush({
-    //   BusinessShortCode: process.env.MPESA_SHORTCODE,
-    //   Password: base64(shortcode + passkey + timestamp),
-    //   Timestamp: timestamp,
-    //   TransactionType: 'CustomerPayBillOnline',
-    //   Amount: order.total,
-    //   PartyA: phone,
-    //   PartyB: shortcode,
-    //   PhoneNumber: phone,
-    //   CallBackURL: `${process.env.API_URL}/api/v1/payments/mpesa/callback`,
-    //   AccountReference: order.orderNumber,
-    //   TransactionDesc: `Payment for ${order.orderNumber}`,
-    // });
+    // Call live Safaricom Daraja STK Push
+    const stkResult = await this.mpesa.stkPush({
+      phone: formattedPhone,
+      amount: order.total,
+      accountReference: order.orderNumber,
+      transactionDesc: `Pay ${order.orderNumber}`,
+    });
+
+    // Store CheckoutRequestID for callback matching
+    await this.prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: 'pending',
+        metadata: {
+          phone: formattedPhone,
+          accountReference: order.orderNumber,
+          checkoutRequestId: stkResult.CheckoutRequestID,
+          merchantRequestId: stkResult.MerchantRequestID,
+        },
+      },
+    });
 
     return {
       transactionId: transaction.id,
-      checkoutRequestId: `ws_CO_${Date.now()}_${uuidv4().slice(0, 8)}`,
-      message: 'STK Push sent. Check your phone to complete payment.',
-      status: 'initiated',
+      checkoutRequestId: stkResult.CheckoutRequestID,
+      merchantRequestId: stkResult.MerchantRequestID,
+      message: stkResult.CustomerMessage,
+      status: 'pending',
+    };
+  }
+
+  async queryMpesaStatus(checkoutRequestId: string) {
+    const result = await this.mpesa.stkQuery(checkoutRequestId);
+    return {
+      resultCode: result.ResultCode,
+      resultDesc: result.ResultDesc,
+      isPaid: result.ResultCode === '0',
     };
   }
 
   async handleMpesaCallback(callbackData: any) {
-    const { Body } = callbackData;
-    const resultCode = Body?.stkCallback?.ResultCode;
-    const checkoutRequestId = Body?.stkCallback?.CheckoutRequestID;
-    const metadata = Body?.stkCallback?.CallbackMetadata?.Item || [];
+    const parsed = this.mpesa.validateCallback(callbackData);
+    this.logger.log(`M-PESA Callback: ${JSON.stringify(parsed)}`);
 
-    const mpesaReceiptNumber = metadata.find((i: any) => i.Name === 'MpesaReceiptNumber')?.Value;
-    const amount = metadata.find((i: any) => i.Name === 'Amount')?.Value;
+    const { checkoutRequestId, success, mpesaReceiptNumber, amount, resultCode } = parsed;
 
-    if (resultCode === 0) {
-      // Payment successful
-      const transaction = await this.prisma.transaction.findFirst({
-        where: {
-          metadata: { path: ['checkoutRequestId'], equals: checkoutRequestId },
-          status: { in: ['initiated', 'pending'] },
+    // Find the matching transaction by checkoutRequestId stored in JSON metadata
+    const transactions = await this.prisma.transaction.findMany({
+      where: { status: { in: ['initiated', 'pending'] } },
+    });
+
+    const matchedTx = transactions.find(
+      (tx: any) => (tx.metadata as any)?.checkoutRequestId === checkoutRequestId,
+    );
+
+    if (!matchedTx) {
+      this.logger.warn(`No transaction found for checkoutRequestId: ${checkoutRequestId}`);
+      return { ResultCode: 0, ResultDesc: 'Accepted' };
+    }
+
+    if (success) {
+      await this.prisma.transaction.update({
+        where: { id: matchedTx.id },
+        data: {
+          status: 'completed',
+          providerRef: mpesaReceiptNumber,
+          metadata: {
+            ...(matchedTx.metadata as object),
+            mpesaReceiptNumber,
+            amount,
+          },
         },
       });
 
-      if (transaction) {
-        await this.prisma.transaction.update({
-          where: { id: transaction.id },
-          data: {
-            status: 'completed',
-            providerRef: mpesaReceiptNumber,
-          },
-        });
-
-        await this.prisma.order.update({
-          where: { id: transaction.orderId! },
+      if (matchedTx.orderId) {
+        const order = await this.prisma.order.update({
+          where: { id: matchedTx.orderId },
           data: {
             paymentStatus: 'paid',
             status: 'confirmed',
@@ -90,12 +130,47 @@ export class PaymentsService {
             mpesaReceiptNumber,
           },
         });
-      }
 
-      return { success: true };
+        // Fire payment received notifications
+        const address = order.shippingAddress as any;
+        const phone = address?.phone || (matchedTx.metadata as any)?.phone || '';
+        const email = order.guestEmail || null;
+        if (phone) {
+          this.notifications
+            .sendPaymentReceived(phone, email, order.orderNumber, order.total, mpesaReceiptNumber || '')
+            .catch((e) => this.logger.error(`Notification failed: ${e}`));
+        }
+
+        // Track analytics
+        this.analytics.trackPaymentSuccess({
+          userId: order.userId || null,
+          orderId: order.id,
+          amount: order.total,
+          mpesaRef: mpesaReceiptNumber || '',
+        });
+      }
+    } else {
+      await this.prisma.transaction.update({
+        where: { id: matchedTx.id },
+        data: { status: 'failed', metadata: { ...(matchedTx.metadata as object), resultCode } },
+      });
+
+      if (matchedTx.orderId) {
+        const failedOrder = await this.prisma.order.update({
+          where: { id: matchedTx.orderId },
+          data: { paymentStatus: 'failed' },
+        });
+        this.analytics.trackPaymentFailed({
+          userId: failedOrder.userId || null,
+          orderId: failedOrder.id,
+          resultCode: Number(resultCode),
+          resultDesc: parsed.resultCode?.toString() || 'failed',
+        });
+      }
     }
 
-    return { success: false, resultCode };
+    // Safaricom expects this exact response format
+    return { ResultCode: 0, ResultDesc: 'Accepted' };
   }
 
   // ─── Transaction Queries ──────────────────────────────────────────────────
@@ -133,13 +208,4 @@ export class PaymentsService {
     return refundTransaction;
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-
-  private formatKenyanPhone(phone: string): string {
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.startsWith('0')) return `254${cleaned.slice(1)}`;
-    if (cleaned.startsWith('254')) return cleaned;
-    if (cleaned.startsWith('+254')) return cleaned.slice(1);
-    return `254${cleaned}`;
-  }
 }

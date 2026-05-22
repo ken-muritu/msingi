@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { CheckCircle2, ChevronRight, Truck, Shield, MapPin } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Truck, Shield, MapPin, AlertCircle } from 'lucide-react'
 import { useCartStore, useCartTotal } from '@/lib/store'
 import { formatKES } from '@/lib/utils'
 import MPesaModal from '@/components/checkout/MPesaModal'
+import { api, type ApiOrder } from '@/lib/api'
 
 type Step = 1 | 2 | 3
 
@@ -18,23 +18,22 @@ const counties = [
 ]
 
 export default function CheckoutPage() {
-  const router = useRouter()
   const { items, clearCart } = useCartStore()
   const total = useCartTotal()
   const delivery = total >= 3000 ? 0 : 300
 
   const [step, setStep] = useState<Step>(1)
   const [showMpesa, setShowMpesa] = useState(false)
-  const [confirmed, setConfirmed] = useState(false)
-  const [orderId, setOrderId] = useState('')
-  const [mpesaRef, setMpesaRef] = useState('')
+  const [placedOrder, setPlacedOrder] = useState<ApiOrder | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '', address: '', county: 'Nairobi', notes: '',
     paymentMethod: 'mpesa',
   })
 
-  if (items.length === 0 && !confirmed) {
+  if (items.length === 0 && !placedOrder) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <p className="text-slate-500 mb-4">Your cart is empty.</p>
@@ -45,39 +44,75 @@ export default function CheckoutPage() {
 
   const handleDeliveryNext = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setStep(2)
   }
 
-  const handlePaymentNext = (e: React.FormEvent) => {
+  const handlePaymentNext = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (form.paymentMethod === 'mpesa') {
-      setShowMpesa(true)
-    } else {
-      completeOrder('CASH-' + Date.now())
+    setError('')
+    setSubmitting(true)
+
+    try {
+      const order = await api.createOrder({
+        guestEmail: form.email || undefined,
+        guestPhone: form.phone,
+        items: items.map((i) => ({ productId: i.id, quantity: i.quantity })),
+        shippingAddress: {
+          name: form.fullName,
+          phone: form.phone,
+          email: form.email || undefined,
+          addressLine1: form.address,
+          city: form.county,
+          county: form.county,
+          deliveryInstructions: form.notes || undefined,
+        },
+        paymentMethod: form.paymentMethod === 'mpesa' ? 'mpesa'
+          : form.paymentMethod === 'airtel' ? 'mpesa'
+          : 'cash_on_delivery',
+      })
+
+      if (!order) throw new Error('Could not create order. Please try again.')
+
+      setPlacedOrder(order)
+
+      if (form.paymentMethod === 'mpesa') {
+        setShowMpesa(true)
+      } else {
+        clearCart()
+        setStep(3)
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const completeOrder = (ref: string) => {
-    const id = 'ORD-' + Date.now().toString().slice(-6)
-    setOrderId(id)
-    setMpesaRef(ref)
-    setConfirmed(true)
+  const handleMpesaSuccess = (_ref: string) => {
+    setShowMpesa(false)
     clearCart()
     setStep(3)
   }
 
-  if (confirmed) {
+  if (step === 3 && placedOrder) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-5">
           <CheckCircle2 size={40} className="text-brand-600" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Order Confirmed! 🎉</h1>
-        <p className="text-slate-500 mb-1">Order ID: <span className="font-bold text-slate-800">{orderId}</span></p>
-        {mpesaRef && <p className="text-slate-500 mb-6">M-PESA Ref: <span className="font-bold text-green-700">{mpesaRef}</span></p>}
+        <p className="text-slate-500 mb-1">
+          Order: <span className="font-bold text-slate-800">{placedOrder.orderNumber}</span>
+        </p>
+        {placedOrder.mpesaReceiptNumber && (
+          <p className="text-slate-500 mb-2">
+            M-PESA Ref: <span className="font-bold text-green-700">{placedOrder.mpesaReceiptNumber}</span>
+          </p>
+        )}
         <p className="text-slate-600 text-sm mb-8">
-          Your order has been confirmed and will be delivered to <strong>{form.address}</strong>, {form.county} within <strong>2–4 business days</strong>.
-          You will receive an SMS and WhatsApp update.
+          Your order has been confirmed and will be delivered to <strong>{form.address}</strong>,{' '}
+          {form.county} within <strong>2–4 business days</strong>. You will receive an SMS update shortly.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/account" className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors">
@@ -110,6 +145,13 @@ export default function CheckoutPage() {
         ))}
       </div>
 
+      {error && (
+        <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="lg:col-span-2">
@@ -128,7 +170,7 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
-                <input className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="optional" type="email" />
+                <input className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="optional — for order updates" type="email" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Delivery Address *</label>
@@ -175,8 +217,16 @@ export default function CheckoutPage() {
                 <button type="button" onClick={() => setStep(1)} className="flex-1 border border-slate-200 text-slate-700 py-3 rounded-2xl font-medium text-sm hover:bg-slate-50 transition-colors">
                   ← Back
                 </button>
-                <button type="submit" className="flex-1 bg-[#00A651] hover:bg-[#008742] text-white py-3 rounded-2xl font-semibold text-sm transition-colors">
-                  Pay {formatKES(total + delivery)}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-[#00A651] hover:bg-[#008742] disabled:opacity-60 text-white py-3 rounded-2xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating order…</>
+                  ) : (
+                    `Pay ${formatKES(total + delivery)}`
+                  )}
                 </button>
               </div>
             </form>
@@ -217,11 +267,13 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {showMpesa && (
+      {showMpesa && placedOrder && (
         <MPesaModal
-          amount={total + delivery}
+          orderId={placedOrder.id}
+          phone={form.phone}
+          amount={placedOrder.total}
           onClose={() => setShowMpesa(false)}
-          onSuccess={(ref) => { setShowMpesa(false); completeOrder(ref) }}
+          onSuccess={handleMpesaSuccess}
         />
       )}
     </div>

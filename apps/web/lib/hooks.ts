@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { api, type ApiProduct, type ApiCategory, type ApiSeller, type ApiSearchResult } from './api'
+import { api, type ApiProduct, type ApiCategory, type ApiSeller, type ApiSearchResult, type ApiCart, type ApiOrder } from './api'
+import { useAuthStore } from './store'
 import {
   products as mockProducts,
   categories as mockCategories,
@@ -273,4 +274,127 @@ export function useSellers(): UseDataResult<Seller[]> {
   }, [])
 
   return { data, loading, error, isLive }
+}
+
+// ─── useAuth ───────────────────────────────────────────────────────────────
+
+export function useAuth() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { setAuth, clearAuth, user, token, isLoggedIn } = useAuthStore()
+
+  const login = async (identifier: string, password: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await api.login(identifier, password)
+      if (result) {
+        setAuth(result.user, result.token)
+        return result
+      }
+      throw new Error('Login failed — backend unreachable')
+    } catch (e: any) {
+      setError(e.message || 'Login failed')
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const register = async (data: { name: string; email?: string; phone?: string; password: string }) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await api.register(data)
+      if (result) {
+        setAuth(result.user, result.token)
+        return result
+      }
+      throw new Error('Registration failed — backend unreachable')
+    } catch (e: any) {
+      setError(e.message || 'Registration failed')
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const logout = () => clearAuth()
+
+  return { login, register, logout, user, token, isLoggedIn, loading, error }
+}
+
+// ─── useApiCart ────────────────────────────────────────────────────────────
+
+export function useApiCart(sessionId?: string) {
+  const [cart, setCart] = useState<ApiCart | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const refresh = async () => {
+    setLoading(true)
+    const result = await api.getCart(sessionId)
+    if (result) setCart(result)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    refresh()
+  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addItem = async (productId: string, variantId?: string, quantity = 1) => {
+    const result = await api.addToCart({ productId, variantId, quantity }, sessionId)
+    if (result) setCart(result)
+    return result
+  }
+
+  const updateItem = async (itemId: string, quantity: number) => {
+    const result = await api.updateCartItem(itemId, quantity, sessionId)
+    if (result) setCart(result)
+    return result
+  }
+
+  const removeItem = async (itemId: string) => {
+    const result = await api.removeCartItem(itemId, sessionId)
+    if (result) setCart(result)
+    return result
+  }
+
+  const clear = async () => {
+    await api.clearCart(sessionId)
+    setCart(null)
+  }
+
+  return { cart, loading, error, addItem, updateItem, removeItem, clear, refresh }
+}
+
+// ─── useMyOrders ───────────────────────────────────────────────────────────
+
+export function useMyOrders(page = 1) {
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchOrders() {
+      setLoading(true)
+      const result = await api.getMyOrders(page)
+      if (cancelled) return
+      if (result) {
+        setOrders(result.data)
+        setTotal(result.total)
+      } else {
+        setError('Could not load orders — are you logged in?')
+      }
+      setLoading(false)
+    }
+
+    fetchOrders()
+    return () => { cancelled = true }
+  }, [page])
+
+  return { orders, total, loading, error }
 }
