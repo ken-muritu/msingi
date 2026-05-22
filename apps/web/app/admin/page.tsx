@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { sellers as mockSellers, products, mockOrders } from '@/lib/data'
 import { formatKES, timeAgo } from '@/lib/utils'
-import { api, type ApiOrder, type ApiSeller, type ApiVerificationRequest } from '@/lib/api'
+import { api, type ApiOrder, type ApiSeller, type ApiVerificationRequest, type ApiTenant } from '@/lib/api'
 
 
 const badgeColors: Record<string, string> = {
@@ -35,8 +35,21 @@ const KYC_STATUS_COLORS: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 }
 
+const PLAN_COLORS: Record<string, string> = {
+  starter: 'bg-slate-100 text-slate-600',
+  growth: 'bg-blue-100 text-blue-700',
+  enterprise: 'bg-violet-100 text-violet-700',
+}
+
+const TENANT_STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  provisioning: 'bg-yellow-100 text-yellow-700',
+  suspended: 'bg-red-100 text-red-700',
+  deleted: 'bg-slate-100 text-slate-400',
+}
+
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'orders' | 'kyc'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'orders' | 'kyc' | 'tenants'>('overview')
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [liveSellers, setLiveSellers] = useState<ApiSeller[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
@@ -48,6 +61,11 @@ export default function AdminPage() {
   const [kycRequests, setKycRequests] = useState<ApiVerificationRequest[]>([])
   const [totalKyc, setTotalKyc] = useState(0)
   const [kycReviewing, setKycReviewing] = useState<string | null>(null)
+  const [tenants, setTenants] = useState<ApiTenant[]>([])
+  const [totalTenants, setTotalTenants] = useState(0)
+  const [tenantForm, setTenantForm] = useState({ name: '', slug: '', plan: 'starter' })
+  const [creatingTenant, setCreatingTenant] = useState(false)
+  const [tenantError, setTenantError] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async (page = 1, status?: string) => {
     setLoading(true)
@@ -73,15 +91,41 @@ export default function AdminPage() {
     if (result) { setKycRequests(result.data); setTotalKyc(result.total) }
   }, [])
 
+  const fetchTenants = useCallback(async () => {
+    const result = await api.getTenants()
+    if (result) { setTenants(result.data); setTotalTenants(result.total) }
+  }, [])
+
   useEffect(() => { fetchOrders(orderPage, statusFilter) }, [orderPage, statusFilter, fetchOrders])
   useEffect(() => { fetchSellers() }, [fetchSellers])
   useEffect(() => { fetchKyc() }, [fetchKyc])
+  useEffect(() => { fetchTenants() }, [fetchTenants])
 
   const handleStatusChange = async (orderId: string, status: string) => {
     setUpdatingId(orderId)
     await api.adminUpdateOrderStatus(orderId, status)
     await fetchOrders(orderPage, statusFilter)
     setUpdatingId(null)
+  }
+
+  const handleCreateTenant = async () => {
+    if (!tenantForm.name || !tenantForm.slug) return
+    setCreatingTenant(true)
+    setTenantError(null)
+    const result = await api.createTenant(tenantForm)
+    if (result) {
+      setTenantForm({ name: '', slug: '', plan: 'starter' })
+      await fetchTenants()
+    } else {
+      setTenantError('Failed to create tenant. Slug may already be taken.')
+    }
+    setCreatingTenant(false)
+  }
+
+  const handleTenantStatusToggle = async (slug: string, current: string) => {
+    const next = current === 'active' ? 'suspended' : 'active'
+    await api.updateTenant(slug, { status: next })
+    await fetchTenants()
   }
 
   const handleKycReview = async (id: string, status: 'approved' | 'rejected', reviewNote?: string) => {
@@ -97,9 +141,9 @@ export default function AdminPage() {
 
   const platformStats = [
     { label: 'Active Sellers', value: isLive ? String(liveSellers.length) : String(mockSellers.length), icon: Store, color: 'text-violet-600 bg-violet-100', change: '' },
-    { label: 'Total Products', value: String(products.length), icon: Package, color: 'text-blue-600 bg-blue-100', change: '' },
     { label: 'Total Orders', value: isLive ? totalOrders.toLocaleString() : '1,248', icon: ShoppingCart, color: 'text-green-600 bg-green-100', change: '' },
     { label: 'KYC Pending', value: String(kycRequests.filter(r => r.status === 'pending').length), icon: AlertTriangle, color: 'text-orange-600 bg-orange-100', change: '' },
+    { label: 'Tenants', value: String(totalTenants), icon: Users, color: 'text-blue-600 bg-blue-100', change: '' },
   ]
 
   return (
@@ -158,10 +202,11 @@ export default function AdminPage() {
           { key: 'sellers', label: 'Sellers' },
           { key: 'orders', label: 'Orders' },
           { key: 'kyc', label: `KYC${totalKyc > 0 ? ` (${totalKyc})` : ''}` },
+          { key: 'tenants', label: `Tenants${totalTenants > 0 ? ` (${totalTenants})` : ''}` },
         ].map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key as 'overview' | 'sellers' | 'orders' | 'kyc')}
+            onClick={() => setActiveTab(key as 'overview' | 'sellers' | 'orders' | 'kyc' | 'tenants')}
             className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
           >
             {label}
@@ -282,6 +327,105 @@ export default function AdminPage() {
                                 Reject
                               </button>
                             </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tenants */}
+      {activeTab === 'tenants' && (
+        <div className="space-y-6">
+          {/* Create tenant form */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5">
+            <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><Users size={16} />Provision New Tenant</h3>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <input
+                placeholder="Business name"
+                value={tenantForm.name}
+                onChange={(e) => setTenantForm((f) => ({ ...f, name: e.target.value }))}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <input
+                placeholder="slug (e.g. techshop)"
+                value={tenantForm.slug}
+                onChange={(e) => setTenantForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <select
+                value={tenantForm.plan}
+                onChange={(e) => setTenantForm((f) => ({ ...f, plan: e.target.value }))}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="starter">Starter</option>
+                <option value="growth">Growth</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </div>
+            {tenantError && <p className="text-red-600 text-xs mt-2">{tenantError}</p>}
+            <button
+              disabled={creatingTenant || !tenantForm.name || !tenantForm.slug}
+              onClick={handleCreateTenant}
+              className="mt-3 px-5 py-2 bg-brand-600 text-white text-sm font-medium rounded-xl hover:bg-brand-700 disabled:opacity-50"
+            >
+              {creatingTenant ? 'Provisioning…' : 'Create Tenant'}
+            </button>
+          </div>
+
+          {/* Tenants table */}
+          {tenants.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Tenant</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Schema</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Domain / Subdomain</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Plan</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Created</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {tenants.map((t) => (
+                      <tr key={t.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-slate-800">{t.name}</p>
+                          <p className="text-xs text-slate-400">{t.slug}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">{t.schemaName}</code>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 text-xs">
+                          {t.domain ?? `${t.subdomain}.msingi.co.ke`}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${PLAN_COLORS[t.plan] ?? 'bg-slate-100 text-slate-600'}`}>{t.plan}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${TENANT_STATUS_COLORS[t.status] ?? 'bg-slate-100 text-slate-600'}`}>{t.status}</span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-400 text-xs">{timeAgo(t.createdAt)}</td>
+                        <td className="py-3 px-4">
+                          {t.status !== 'provisioning' && (
+                            <button
+                              onClick={() => handleTenantStatusToggle(t.slug, t.status)}
+                              className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
+                                t.status === 'active'
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {t.status === 'active' ? 'Suspend' : 'Activate'}
+                            </button>
                           )}
                         </td>
                       </tr>

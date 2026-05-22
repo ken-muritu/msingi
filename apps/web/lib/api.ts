@@ -297,6 +297,21 @@ export interface ApiReview {
   sellerResponse: string | null
 }
 
+// ─── Tenant Types ──────────────────────────────────────────────────────────
+
+export interface ApiTenant {
+  id: string
+  name: string
+  slug: string
+  subdomain: string | null
+  domain: string | null
+  schemaName: string
+  plan: string
+  status: string
+  createdAt: string
+  owner?: { id: string; name: string; email: string | null }
+}
+
 // ─── Verification Types ────────────────────────────────────────────────────
 
 export interface ApiVerificationRequest {
@@ -462,4 +477,20 @@ export const api = {
       method: 'PATCH',
       body: { status, reviewNote },
     }),
+
+  // Tenants
+  getTenants: (page = 1) =>
+    apiFetch<{ data: ApiTenant[]; total: number }>(`/tenants?page=${page}`),
+
+  getTenant: (slug: string) =>
+    apiFetch<ApiTenant>(`/tenants/${slug}`),
+
+  createTenant: (data: { name: string; slug: string; subdomain?: string; domain?: string; plan?: string }) =>
+    apiFetch<ApiTenant>('/tenants', { method: 'POST', body: data }),
+
+  updateTenant: (slug: string, data: { name?: string; domain?: string; plan?: string; status?: string }) =>
+    apiFetch<ApiTenant>(`/tenants/${slug}`, { method: 'PATCH', body: data }),
+
+  reprovisionTenant: (slug: string) =>
+    apiFetch<ApiTenant>(`/tenants/${slug}/reprovision`, { method: 'POST' }),
 }

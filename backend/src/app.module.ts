@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -17,6 +17,8 @@ import { CartModule } from './modules/cart/cart.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
+import { TenantMiddleware } from './modules/tenants/tenant.middleware';
 
 @Module({
   imports: [
@@ -44,9 +46,14 @@ import { VerificationModule } from './modules/verification/verification.module';
     StorageModule,
     AnalyticsModule,
     VerificationModule,
+    TenantsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantMiddleware).forRoutes('*');
+  }
+}

@@ -32,6 +32,7 @@ model User {
   reviews       Review[]
   notifications Notification[]
   cart          Cart?
+  tenants       Tenant[]
 
   @@index([email])
   @@index([phone])
@@ -367,6 +368,30 @@ model CartItem {
   @@unique([cartId, productId, variantId])
   @@index([cartId])
   @@index([productId])
+}
+
+// ─── Tenants (Multi-tenancy registry — lives in public schema) ──────────────
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique   // used as PG schema name: tenant_<slug>
+  domain      String?  @unique   // custom domain e.g. techshop.co.ke
+  subdomain   String?  @unique   // e.g. "techshop" → techshop.msingi.co.ke
+  plan        String   @default("starter") // starter, growth, enterprise
+  status      String   @default("provisioning") // provisioning, active, suspended, deleted
+  schemaName  String   @unique   // actual PG schema: tenant_<slug>
+  ownerId     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@index([slug])
+  @@index([domain])
+  @@index([subdomain])
+  @@index([status])
 }
 
 // ─── KYC / Seller Verification ──────────────────────────────────────────────
