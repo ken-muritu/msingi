@@ -21,7 +21,7 @@ Modular monolith (Turborepo monorepo) — single deployable with module composab
 
 | Layer | Technology | Status |
 |-------|-----------|--------|
-| Frontend | Next.js 14 (App Router) + Tailwind CSS | ✅ Running |
+| Frontend | Next.js 14 (App Router) + Tailwind CSS | ✅ Landing page live |
 | Backend | NestJS 10 + Prisma ORM | ✅ Running |
 | Database | PostgreSQL 15+ | ✅ Running |
 | Packages | `@msingi/types` + `@msingi/config` | ✅ Building |
@@ -39,11 +39,32 @@ Modular monolith (Turborepo monorepo) — single deployable with module composab
 ```
 msingi/
 ├── apps/
-│   └── web/                   # @msingi/web — Next.js 14 storefront (PWA)
+│   └── web/                   # @msingi/web — Next.js 14 frontend
 │       ├── app/               # App Router pages
-│       ├── components/        # React components (home, layout, products, checkout)
+│       │   ├── page.tsx       # Landing page (Hero → Features → Modules → Arch → Demo → GetStarted)
+│       │   ├── layout.tsx     # Root layout (dark theme, MsingiNav, MsingiFooter)
+│       │   ├── globals.css    # Tailwind base + dark theme styles
+│       │   ├── products/      # Product listing + detail pages
+│       │   ├── seller/        # Seller dashboard, product management
+│       │   ├── cart/          # Shopping cart
+│       │   ├── checkout/      # Checkout + M-PESA payment
+│       │   └── ...            # account, admin, deals, compare, wishlist, live
+│       ├── components/
+│       │   ├── landing/       # Framework landing page (8 components)
+│       │   │   ├── Hero.tsx           # Headline, terminal preview, stats
+│       │   │   ├── Features.tsx       # 8 feature cards (M-PESA, WhatsApp, etc.)
+│       │   │   ├── Modules.tsx        # 10 backend modules with status
+│       │   │   ├── Architecture.tsx   # Tech stack grid + monorepo tree
+│       │   │   ├── Demo.tsx           # Interactive API response viewer
+│       │   │   ├── GetStarted.tsx     # 4-step setup + seed credentials
+│       │   │   ├── MsingiNav.tsx      # Dark glassmorphism navbar
+│       │   │   └── MsingiFooter.tsx   # Minimal dark footer
+│       │   ├── home/          # Store homepage sections (Jenga reference impl)
+│       │   ├── layout/        # Store layout (Navbar, Footer, CartSidebar, BottomNav)
+│       │   ├── products/      # ProductCard, CompareBar
+│       │   └── checkout/      # MPesaModal
 │       ├── lib/
-│       │   ├── api.ts         # Typed Msingi API client
+│       │   ├── api.ts         # Typed Msingi API client (fetch + fallback)
 │       │   ├── hooks.ts       # React hooks (useProducts, useCategories, useSearch, etc.)
 │       │   ├── data.ts        # Static mock data (fallback when API unavailable)
 │       │   ├── store.ts       # Zustand stores (cart, wishlist, compare)
@@ -192,9 +213,10 @@ pnpm dev:backend      # Backend only  → http://localhost:4000
 
 ### 5. Explore
 
-- **Storefront**: http://localhost:3000
+- **Landing page**: http://localhost:3000 (Msingi framework site)
 - **Swagger API docs**: http://localhost:4000/api/docs
 - **Health check**: http://localhost:4000/api/v1/health
+- **Demo store** (Jenga reference): http://localhost:3000/products
 
 ### Seed Credentials
 
@@ -305,7 +327,8 @@ The `apps/web/vercel.json` handles monorepo builds automatically.
 3. Add env: `NEXT_PUBLIC_API_URL=https://your-api.example.com/api/v1`
 4. Deploy
 
-Without a backend URL, the frontend gracefully falls back to mock data.
+The landing page is fully static — no backend needed for the framework site.
+The demo store pages (`/products`, `/cart`, etc.) fall back to mock data without a backend URL.
 
 ### Backend
 
@@ -322,7 +345,7 @@ Deploy the NestJS backend to any Node.js host:
 | Category | Choice | Why |
 |----------|--------|-----|
 | Monorepo | Turborepo + pnpm | Fast builds, workspace protocol |
-| Frontend | Next.js 14 | App Router, RSC, ISR for SEO |
+| Frontend | Next.js 14 | App Router, dark landing page + demo store |
 | Styling | Tailwind CSS | Utility-first, responsive |
 | State | Zustand | Lightweight, persistent stores |
 | Backend | NestJS 10 | Modular, decorators, Swagger |
