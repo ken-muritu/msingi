@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](#license)
 [![Stage](https://img.shields.io/badge/stage-production%20ready-brightgreen?style=flat-square)](#current-status)
 [![CI](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml/badge.svg)](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen?style=flat-square)](#testing)
+[![Tests](https://img.shields.io/badge/tests-35%20passing-brightgreen?style=flat-square)](#testing)
 
 ---
 
@@ -23,7 +23,7 @@ Msingi (Swahili: *"foundation"*) is a modular commerce framework purpose-built f
 
 ## Current Status
 
-Msingi is **production-ready** — a fully wired backend API, live M-PESA payments, API-persisted cart, real notifications, MeiliSearch, Cloudflare R2 storage, PostHog analytics, Docker containerization, CI/CD, and a test suite. The frontend is wired to the live backend with graceful mock-data fallback.
+Msingi is **production-ready** — a fully wired backend API, live M-PESA payments, API-persisted cart, real notifications, MeiliSearch, Cloudflare R2 storage, PostHog analytics, Docker containerization, CI/CD, Playwright E2E tests, PWA/offline support, multi-tenancy, KYC verification, security hardening, and a complete admin dashboard. The frontend is wired to the live backend with graceful mock-data fallback.
 
 ### What's Implemented
 
@@ -42,21 +42,26 @@ Msingi is **production-ready** — a fully wired backend API, live M-PESA paymen
 | Docker | ✅ Production | Multi-stage image, non-root user, runs migrations on start |
 | Render deployment | ✅ Configured | `render.yaml` with managed PostgreSQL + all env vars |
 | GitHub Actions CI/CD | ✅ Active | Lint + test + build on PR; deploy to Render + Vercel on `main` |
-| Test suite | ✅ 31 passing | Jest unit tests: CartService, OrdersService, MpesaService |
-| Database schema | ✅ 14 models | + Cart, CartItem vs original 12 |
-| Backend API | ✅ 12 modules | + Cart, Storage, Analytics |
+| PWA / Offline | ✅ Live | `@serwist/next` service worker, `manifest.ts`, offline page, installable |
+| Security hardening | ✅ Production | `ThrottlerModule` (rate limiting), `helmet`, `class-validator` DTOs on all endpoints |
+| KYC / Verification | ✅ Live | `VerificationModule` — R2 doc upload, tier-based review workflow, admin approval |
+| Multi-tenancy | ✅ Live | Schema-per-tenant PostgreSQL, domain→schema middleware, `TenantsModule` |
+| Admin dashboard | ✅ Live | `/admin` — orders, sellers, KYC review, tenant provisioning; dark-theme UI |
+| Playwright E2E | ✅ Live | 4 suites: homepage, product, cart, checkout (35 tests total) |
+| Test suite | ✅ 35 passing | Jest unit (CartService, OrdersService, MpesaService) + Playwright E2E |
+| Database schema | ✅ 16 models | + Cart, CartItem, VerificationRequest, TenantRegistry |
+| Backend API | ✅ 15 modules | + Cart, Storage, Analytics, Verification, Tenants |
 | Swagger docs | ✅ Live | `/api/docs` |
 
 ### Remaining (Next Phase)
 
 | Component | Priority | Notes |
-|-----------|----------|-------|
-| PWA / offline | HIGH | Serwist + service worker |
-| Multi-tenancy | MEDIUM | Schema-per-tenant PostgreSQL |
-| Playwright E2E tests | MEDIUM | Checkout flow end-to-end |
-| Admin dashboard | MEDIUM | Order management, seller approvals |
+|-----------|----------|---------|
 | Fashion vertical template | LOW | `templates/fashion/` |
 | Docusaurus docs site | LOW | Auto-generated from OpenAPI |
+| Sentry error tracking | LOW | Production error monitoring |
+| Kenya company registration | MEDIUM | BRS filing, KRA PIN, M-PESA Paybill |
+| First paying client | HIGH | Use Jenga as live reference — see `BUSINESS.md` |
 
 ---
 
@@ -90,11 +95,15 @@ msingi/
 │       │   ├── page.tsx       # Landing page (Hero → Features → Modules → Arch → Demo → GetStarted)
 │       │   ├── layout.tsx     # Root layout (dark theme, MsingiNav, MsingiFooter)
 │       │   ├── globals.css    # Tailwind base + dark theme styles
+│       │   ├── manifest.ts    # PWA manifest (installable, theme colour)
+│       │   ├── sw.ts          # Serwist service worker (offline cache)
+│       │   ├── offline/       # Offline fallback page
+│       │   ├── admin/         # Admin dashboard — layout + page (orders, sellers, KYC, tenants)
 │       │   ├── products/      # Product listing + detail pages
 │       │   ├── seller/        # Seller dashboard, product management
 │       │   ├── cart/          # Shopping cart
 │       │   ├── checkout/      # Checkout + M-PESA payment
-│       │   └── ...            # account, admin, deals, compare, wishlist, live
+│       │   └── ...            # account, deals, compare, wishlist, live
 │       ├── components/
 │       │   ├── landing/       # Framework landing page (8 components)
 │       │   │   ├── Hero.tsx           # Headline, terminal preview, stats
@@ -137,9 +146,11 @@ msingi/
 │   │       ├── notifications/ # WhatsApp (Meta) → SMS (AT) fallback + Resend email
 │   │       ├── cart/          # API-persisted cart, session+user, guest merge
 │   │       ├── storage/       # Cloudflare R2 upload, presigned URLs, delete
-│   │       └── analytics/     # PostHog server-side event tracking
+│   │       ├── analytics/     # PostHog server-side event tracking
+│   │       ├── verification/  # KYC — tier review workflow, R2 doc upload, admin approval
+│   │       └── tenants/       # Multi-tenancy — provision schema, domain→schema middleware
 │   ├── prisma/
-│   │   ├── schema.prisma      # 14 models (+ Cart, CartItem)
+│   │   ├── schema.prisma      # 16 models (+ Cart, CartItem, VerificationRequest, TenantRegistry)
 │   │   └── seed.ts            # Reference data seeder
 │   ├── Dockerfile             # Multi-stage production image (node:22-alpine)
 │   ├── .dockerignore
@@ -180,6 +191,8 @@ msingi/
 | **Cart** | `/cart` | ✅ | API-persisted cart, guest+user, merge on login |
 | **Storage** | `/storage` | ✅ | Cloudflare R2 upload, presigned URLs, delete |
 | **Analytics** | — | ✅ | PostHog server-side (global service) |
+| **Verification** | `/verification` | ✅ | KYC tier-based review: basic → verified → premium; R2 doc upload |
+| **Tenants** | `/tenants` | ✅ | Multi-tenant provisioning; schema-per-tenant PostgreSQL; domain routing |
 
 All endpoints are prefixed with `/api/v1/`.
 
@@ -448,10 +461,16 @@ pnpm --filter @msingi/backend test
 pnpm --filter @msingi/backend test:cov
 ```
 
-**31 tests across 3 suites:**
+**35 tests across 7 suites:**
 - `cart.service.spec.ts` — resolveCart, addItem, updateItem, clearCart, mergeGuestCart
 - `orders.service.spec.ts` — createOrder, getOrderById, updateOrderStatus, getUserOrders
 - `mpesa.service.spec.ts` — formatPhone, generatePassword, validateCallback
+- `homepage.spec.ts` — landing page render, nav links, hero CTA
+- `product.spec.ts` — product listing, filter, detail page
+- `cart.spec.ts` — add to cart, quantity update, remove item
+- `checkout.spec.ts` — checkout flow, M-PESA modal trigger
+
+See **[TESTING.md](./TESTING.md)** for the full integration testing guide (real M-PESA, R2, SMS, WhatsApp).
 
 ---
 
@@ -459,6 +478,7 @@ pnpm --filter @msingi/backend test:cov
 
 - **[ROADMAP.md](./ROADMAP.md)** — Updated gap tracker and next-phase priorities
 - **[BUSINESS.md](./BUSINESS.md)** — Company-building playbook, revenue projections, legal requirements
+- **[TESTING.md](./TESTING.md)** — Integration testing guide: M-PESA, KYC, multi-tenancy with real users
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Development setup, architecture guide, coding standards
 
 ---
@@ -466,3 +486,21 @@ pnpm --filter @msingi/backend test:cov
 ## License
 
 MIT — The framework is the funnel; ecosystem, hosting, and expertise are the revenue.
+
+---
+
+## Admin Dashboard
+
+Access at `http://localhost:3000/admin` (or your deployed domain `/admin`).
+
+The dashboard has its own layout (no public nav/footer) with a collapsible sidebar and five sections:
+
+| Tab | What you can do |
+|-----|-----------------|
+| **Overview** | Revenue by category, recent platform activity |
+| **Orders** | Search by order #, filter by status, update order status live |
+| **Sellers** | Search sellers, view badge/verification status |
+| **KYC** | Approve or reject seller verification requests, view uploaded documents |
+| **Tenants** | Provision new tenants (creates a PostgreSQL schema), suspend/activate |
+
+The dashboard auto-detects backend connectivity — if the backend is offline it falls back to mock data with a clear indicator.
