@@ -1,7 +1,9 @@
 import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { Public } from '../auth/public.decorator';
+import { StkPushDto, RefundDto } from './payments.dto';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -10,11 +12,12 @@ export class PaymentsController {
 
   @Post('mpesa/stk-push')
   @ApiOperation({ summary: 'Initiate M-PESA STK Push payment' })
-  initiateMpesa(@Body() body: { orderId: string; phone: string }) {
-    return this.paymentsService.initiateMpesaPayment(body.orderId, body.phone);
+  initiateMpesa(@Body() dto: StkPushDto) {
+    return this.paymentsService.initiateMpesaPayment(dto.orderId, dto.phone);
   }
 
   @Public()
+  @SkipThrottle()
   @Post('mpesa/callback')
   @ApiOperation({ summary: 'M-PESA callback webhook (called by Safaricom)' })
   mpesaCallback(@Body() body: any) {
@@ -45,7 +48,7 @@ export class PaymentsController {
   @Post('refund')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Initiate a refund' })
-  initiateRefund(@Body() body: { orderId: string; amount: number; reason?: string }) {
-    return this.paymentsService.initiateRefund(body.orderId, body.amount, body.reason);
+  initiateRefund(@Body() dto: RefundDto) {
+    return this.paymentsService.initiateRefund(dto.orderId, dto.amount, dto.reason);
   }
 }

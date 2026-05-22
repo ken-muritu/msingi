@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Param, Query, Body, Request } from '@nestjs
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { Public } from '../auth/public.decorator';
+import { CreateOrderDto, UpdateOrderStatusDto } from './orders.dto';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -11,8 +12,8 @@ export class OrdersController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new order (checkout) — works for guests and logged-in users' })
-  createOrder(@Body() body: any) {
-    return this.ordersService.createOrder(body);
+  createOrder(@Body() dto: CreateOrderDto) {
+    return this.ordersService.createOrder(dto);
   }
 
   @Get('my')
@@ -63,9 +64,9 @@ export class OrdersController {
   @ApiOperation({ summary: 'Update order status' })
   updateStatus(
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateOrderStatus(id, status);
+    return this.ordersService.updateOrderStatus(id, dto.status);
   }
 
   @Get()
