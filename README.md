@@ -4,6 +4,10 @@
 
 > Deploy a complete African commerce business in weeks, not months. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
 
+[![Live](https://img.shields.io/badge/landing-msingios.vercel.app-black?style=flat-square)](https://msingios.vercel.app)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](#license)
+[![Stage](https://img.shields.io/badge/stage-polished%20prototype-orange?style=flat-square)](#current-status)
+
 ---
 
 ## What is Msingi?
@@ -15,6 +19,49 @@ Msingi (Swahili: *"foundation"*) is a modular commerce framework purpose-built f
 
 ---
 
+## Current Status
+
+Msingi is at the **polished prototype** stage — a live landing page, a functional product catalog, and a well-structured codebase. See [ROADMAP.md](./ROADMAP.md) for the path to production.
+
+### What's Working
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Landing page | ✅ Live | Dark theme, terminal preview, feature cards, API demo at [msingios.vercel.app](https://msingios.vercel.app) |
+| Product listing | ✅ Functional | 35 products, filters, sorting, BNPL pricing, brand labels (mock data) |
+| Monorepo structure | ✅ Solid | Turborepo + pnpm, Next.js 14, NestJS 10, Prisma ORM |
+| Database schema | ✅ 12 models | User, Seller, Product, Order, Payment, Review, etc. |
+| Config system | ✅ Typed | `MsingiConfig` type system, `defineConfig()`, `formatPrice()` |
+| Backend API scaffold | ✅ 10 modules | Health, Auth, Catalog, Inventory, Orders, Payments, Sellers, Search, Reviews, Notifications |
+| Swagger docs | ✅ Configured | `@nestjs/swagger` integrated |
+| Reference config | ✅ Complete | `jenga.config.ts` with full MsingiConfig |
+
+### What's Missing (Honest Audit)
+
+| Component | Gap | Severity |
+|-----------|-----|----------|
+| Live backend API | Not deployed — frontend falls back to mock data | CRITICAL |
+| M-PESA integration | Scaffolded only — no live Daraja connection | CRITICAL |
+| Checkout flow | Scaffolded only — no end-to-end purchase | CRITICAL |
+| Cart persistence | Zustand in-memory only — refresh = empty | CRITICAL |
+| Production database | Local PostgreSQL only | CRITICAL |
+| Redis + BullMQ | No queue system for background jobs | CRITICAL |
+| MeiliSearch | Client-side filtering, not real search | HIGH |
+| PWA / offline | No service worker, no offline capability | HIGH |
+| WhatsApp Business API | No commerce bot, no order notifications | HIGH |
+| Email / SMS provider | No transactional messaging | HIGH |
+| Image storage | No Cloudflare R2 or S3 integration | MODERATE |
+| Analytics | No PostHog event tracking | MODERATE |
+| Multi-tenancy | Single-tenant only | MODERATE |
+| Docker | No production containerization | MODERATE |
+| Testing suite | No unit, integration, or e2e tests | LOW |
+| Documentation site | No Docusaurus — README only | LOW |
+| CI/CD | No automated testing or deployment | LOW |
+
+> **Every gap has a free-tier or open-source solution.** See [ROADMAP.md](./ROADMAP.md) for implementation details and [BUSINESS.md](./BUSINESS.md) for the company-building playbook.
+
+---
+
 ## Architecture
 
 Modular monolith (Turborepo monorepo) — single deployable with module composability.
@@ -22,15 +69,16 @@ Modular monolith (Turborepo monorepo) — single deployable with module composab
 | Layer | Technology | Status |
 |-------|-----------|--------|
 | Frontend | Next.js 14 (App Router) + Tailwind CSS | ✅ Landing page live |
-| Backend | NestJS 10 + Prisma ORM | ✅ Running |
-| Database | PostgreSQL 15+ | ✅ Running |
+| Backend | NestJS 10 + Prisma ORM | ⚡ Scaffolded (local only) |
+| Database | PostgreSQL 15+ | ⚡ Local (needs Render/Supabase) |
 | Packages | `@msingi/types` + `@msingi/config` | ✅ Building |
 | Search | MeiliSearch | 🔜 Planned |
-| Cache/Queue | Redis + BullMQ | 🔜 Planned |
-| Payments | M-PESA (Daraja) + Pesapal + Stripe | ⚡ Scaffolded |
+| Cache/Queue | Redis (Upstash) + BullMQ | 🔜 Planned |
+| Payments | M-PESA Daraja + Pesapal | ⚡ Scaffolded |
+| Notifications | WhatsApp + Africa's Talking + Resend | 🔜 Planned |
 | Analytics | PostHog | 🔜 Planned |
-| Storage | Cloudflare R2 / S3 | 🔜 Planned |
-| Infra | Docker + Turborepo | ✅ Turborepo |
+| Storage | Cloudflare R2 | 🔜 Planned |
+| Infra | Docker + Turborepo + GitHub Actions | ⚡ Turborepo only |
 
 ---
 
@@ -330,13 +378,17 @@ The `apps/web/vercel.json` handles monorepo builds automatically.
 The landing page is fully static — no backend needed for the framework site.
 The demo store pages (`/products`, `/cart`, etc.) fall back to mock data without a backend URL.
 
-### Backend
+### Backend (Recommended: Render)
 
-Deploy the NestJS backend to any Node.js host:
+Render is the recommended backend host — free PostgreSQL, free web services, git-push-to-deploy.
 
-- **Railway** / **Render** / **Fly.io** — connect to a managed PostgreSQL
-- Set all env vars from `backend/.env.example`
-- Run: `pnpm --filter @msingi/backend build && pnpm --filter @msingi/backend start:prod`
+1. Create a **Web Service** on [render.com](https://render.com)
+2. Create a **PostgreSQL** database (free tier: 1 GB)
+3. Set all env vars from `backend/.env.example`
+4. Build command: `pnpm --filter @msingi/backend build`
+5. Start command: `pnpm --filter @msingi/backend start:prod`
+
+Alternatives: Railway, Fly.io (no free tier since 2024), any Node.js host with PostgreSQL.
 
 ---
 
@@ -352,11 +404,33 @@ Deploy the NestJS backend to any Node.js host:
 | ORM | Prisma | Type-safe, migrations, schema push |
 | Database | PostgreSQL | JSONB attributes, full-text search |
 | Auth | JWT + bcrypt | Stateless, role-based |
-| Payments | M-PESA Daraja | STK Push, BNPL, callbacks |
+| Payments | M-PESA Daraja + Pesapal | STK Push, BNPL, callbacks, cards |
+| Search | MeiliSearch | Typo-tolerant, faceted, sub-50ms (planned) |
+| Queue | Redis (Upstash) + BullMQ | Background jobs, retries (planned) |
+| Notifications | WhatsApp + Africa's Talking + Resend | Commerce messaging (planned) |
+| Storage | Cloudflare R2 | $0 egress, S3-compatible (planned) |
+| Analytics | PostHog | 1M events/mo free (planned) |
 | Types | TypeScript | End-to-end type safety |
+
+### Infrastructure Costs
+
+| Phase | Monthly | Annual |
+|-------|---------|--------|
+| Development (free tiers) | $0 | $0 |
+| First client | ~$20 | ~$240 |
+| 5 clients (production) | ~$315 | ~$3,780 |
+| 10 clients (scaled) | ~$600 | ~$7,200 |
+
+---
+
+## Documentation
+
+- **[ROADMAP.md](./ROADMAP.md)** — 16-week implementation plan, gap-by-gap solutions
+- **[BUSINESS.md](./BUSINESS.md)** — Company-building playbook, revenue projections, legal requirements
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Development setup, architecture guide, coding standards
 
 ---
 
 ## License
 
-MIT
+MIT — The framework is the funnel; ecosystem, hosting, and expertise are the revenue.
