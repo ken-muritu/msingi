@@ -1,48 +1,45 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import CartSidebar from '@/components/layout/CartSidebar'
-import BottomNav from '@/components/layout/BottomNav'
-import CompareBar from '@/components/products/CompareBar'
+import MsingiNav from '@/components/landing/MsingiNav'
+import MsingiFooter from '@/components/landing/MsingiFooter'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Jenga Electronics',
-    default: "Jenga Electronics – Kenya's Premier Electronics & Appliances Store",
+    template: '%s | Msingi',
+    default: 'Msingi — The Commerce Foundation for African Business',
   },
   description:
-    'Shop smartphones, laptops, TVs, fridges, and home appliances. Pay via M-PESA. Fast delivery across all 47 counties in Kenya.',
+    'Deploy a complete African commerce business in weeks, not months. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.',
   keywords: [
-    'electronics Kenya',
-    'M-PESA electronics',
-    'phones Kenya',
-    'laptops Kenya',
-    'Samsung Kenya',
-    'Apple Kenya',
-    'LG Kenya',
+    'African commerce',
+    'commerce framework',
+    'M-PESA integration',
+    'WhatsApp commerce',
+    'Kenya ecommerce',
+    'open source commerce',
+    'NestJS commerce',
+    'Next.js commerce',
   ],
-  authors: [{ name: 'Jenga Electronics' }],
-  creator: 'Jenga Electronics',
-  manifest: '/manifest.json',
+  authors: [{ name: 'Msingi' }],
+  creator: 'Msingi',
   openGraph: {
     type: 'website',
     locale: 'en_KE',
-    url: 'https://jenga.co.ke',
-    siteName: 'Jenga Electronics',
-    title: "Jenga Electronics – Kenya's Premier Electronics Store",
-    description: 'Shop electronics, pay via M-PESA, delivered across Kenya.',
+    url: 'https://msingi.dev',
+    siteName: 'Msingi',
+    title: 'Msingi — The Commerce Foundation for African Business',
+    description: 'Deploy a complete African commerce business in weeks, not months.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jenga Electronics Kenya',
-    description: 'Shop electronics, pay via M-PESA, delivered across Kenya.',
+    title: 'Msingi — Commerce Foundation for Africa',
+    description: 'M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.',
   },
   robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#00A651',
+  themeColor: '#0A0A0A',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -50,20 +47,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-KE" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth dark">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Jenga" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Msingi" />
       </head>
-      <body className="font-sans bg-slate-50 text-slate-800 antialiased">
-        <Navbar />
-        <CartSidebar />
-        <main className="min-h-screen pb-16 md:pb-0">{children}</main>
-        <Footer />
-        <CompareBar />
-        <BottomNav />
+      <body className="font-sans bg-[#0A0A0A] text-white antialiased">
+        <MsingiNav />
+        <main className="min-h-screen">{children}</main>
+        <MsingiFooter />
       </body>
     </html>
   )
