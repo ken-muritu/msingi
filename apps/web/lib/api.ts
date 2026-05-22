@@ -297,6 +297,22 @@ export interface ApiReview {
   sellerResponse: string | null
 }
 
+// ─── Verification Types ────────────────────────────────────────────────────
+
+export interface ApiVerificationRequest {
+  id: string
+  sellerId: string
+  status: string
+  tier: string
+  documents: { key: string; url: string; type: string; uploadedAt: string }[]
+  notes: string | null
+  reviewNote: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  submittedAt: string
+  seller: { businessName: string; slug: string }
+}
+
 // ─── API Methods ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -422,4 +438,28 @@ export const api = {
 
   adminGetSellers: (page = 1, pageSize = 50) =>
     apiFetch<{ data: ApiSeller[]; total: number }>(`/sellers?page=${page}&pageSize=${pageSize}`),
+
+  // KYC / Verification
+  getVerificationUploadUrl: (docType: string, mimeType: string) =>
+    apiFetch<{ key: string; uploadUrl: string | null; expiresInSeconds: number }>('/verification/upload-url', {
+      method: 'POST',
+      body: { docType, mimeType },
+    }),
+
+  submitVerification: (data: { tier: string; documents: { key: string; url: string; type: string }[]; notes?: string }) =>
+    apiFetch<{ id: string; status: string }>('/verification/submit', { method: 'POST', body: data }),
+
+  getMyVerifications: () =>
+    apiFetch<{ id: string; status: string; tier: string; submittedAt: string; reviewNote: string | null }[]>('/verification/my'),
+
+  adminGetVerifications: (page = 1, status?: string) =>
+    apiFetch<{ data: ApiVerificationRequest[]; total: number }>(
+      `/verification/admin/requests?page=${page}${status ? `&status=${status}` : ''}`
+    ),
+
+  adminReviewVerification: (id: string, status: string, reviewNote?: string) =>
+    apiFetch<{ id: string; status: string }>(`/verification/admin/requests/${id}/review`, {
+      method: 'PATCH',
+      body: { status, reviewNote },
+    }),
 }

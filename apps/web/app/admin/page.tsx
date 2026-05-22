@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { sellers as mockSellers, products, mockOrders } from '@/lib/data'
 import { formatKES, timeAgo } from '@/lib/utils'
-import { api, type ApiOrder, type ApiSeller } from '@/lib/api'
+import { api, type ApiOrder, type ApiSeller, type ApiVerificationRequest } from '@/lib/api'
 
 
 const badgeColors: Record<string, string> = {
@@ -28,8 +28,15 @@ const statusColors: Record<string, string> = {
 
 const ORDER_STATUSES = ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
 
+const KYC_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  under_review: 'bg-blue-100 text-blue-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+}
+
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'orders'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'orders' | 'kyc'>('overview')
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [liveSellers, setLiveSellers] = useState<ApiSeller[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
@@ -38,6 +45,9 @@ export default function AdminPage() {
   const [isLive, setIsLive] = useState(false)
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [kycRequests, setKycRequests] = useState<ApiVerificationRequest[]>([])
+  const [totalKyc, setTotalKyc] = useState(0)
+  const [kycReviewing, setKycReviewing] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async (page = 1, status?: string) => {
     setLoading(true)
@@ -58,14 +68,27 @@ export default function AdminPage() {
     if (result) setLiveSellers(result.data)
   }, [])
 
+  const fetchKyc = useCallback(async () => {
+    const result = await api.adminGetVerifications(1)
+    if (result) { setKycRequests(result.data); setTotalKyc(result.total) }
+  }, [])
+
   useEffect(() => { fetchOrders(orderPage, statusFilter) }, [orderPage, statusFilter, fetchOrders])
   useEffect(() => { fetchSellers() }, [fetchSellers])
+  useEffect(() => { fetchKyc() }, [fetchKyc])
 
   const handleStatusChange = async (orderId: string, status: string) => {
     setUpdatingId(orderId)
     await api.adminUpdateOrderStatus(orderId, status)
     await fetchOrders(orderPage, statusFilter)
     setUpdatingId(null)
+  }
+
+  const handleKycReview = async (id: string, status: 'approved' | 'rejected', reviewNote?: string) => {
+    setKycReviewing(id)
+    await api.adminReviewVerification(id, status, reviewNote)
+    await fetchKyc()
+    setKycReviewing(null)
   }
 
   const displaySellers = liveSellers.length > 0
@@ -76,7 +99,7 @@ export default function AdminPage() {
     { label: 'Active Sellers', value: isLive ? String(liveSellers.length) : String(mockSellers.length), icon: Store, color: 'text-violet-600 bg-violet-100', change: '' },
     { label: 'Total Products', value: String(products.length), icon: Package, color: 'text-blue-600 bg-blue-100', change: '' },
     { label: 'Total Orders', value: isLive ? totalOrders.toLocaleString() : '1,248', icon: ShoppingCart, color: 'text-green-600 bg-green-100', change: '' },
-    { label: 'API Status', value: isLive ? 'Live' : 'Mock', icon: DollarSign, color: isLive ? 'text-green-600 bg-green-100' : 'text-orange-600 bg-orange-100', change: '' },
+    { label: 'KYC Pending', value: String(kycRequests.filter(r => r.status === 'pending').length), icon: AlertTriangle, color: 'text-orange-600 bg-orange-100', change: '' },
   ]
 
   return (
@@ -134,10 +157,11 @@ export default function AdminPage() {
           { key: 'overview', label: 'Overview' },
           { key: 'sellers', label: 'Sellers' },
           { key: 'orders', label: 'Orders' },
+          { key: 'kyc', label: `KYC${totalKyc > 0 ? ` (${totalKyc})` : ''}` },
         ].map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key as 'overview' | 'sellers' | 'orders')}
+            onClick={() => setActiveTab(key as 'overview' | 'sellers' | 'orders' | 'kyc')}
             className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
           >
             {label}
@@ -191,6 +215,82 @@ export default function AdminPage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* KYC */}
+      {activeTab === 'kyc' && (
+        <div className="space-y-4">
+          {kycRequests.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
+              <CheckCircle2 size={40} className="text-green-400 mx-auto mb-3" />
+              <p className="text-slate-500 font-medium">No pending verification requests</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Seller</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Tier</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Documents</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Submitted</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {kycRequests.map((req) => (
+                      <tr key={req.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-slate-800">{req.seller.businessName}</p>
+                          <p className="text-xs text-slate-400">{req.seller.slug}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${badgeColors[req.tier] ?? 'bg-slate-100 text-slate-600'}`}>{req.tier}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {req.documents.map((d) => (
+                              <a key={d.key} href={d.url} target="_blank" rel="noopener noreferrer"
+                                className="text-xs bg-slate-100 text-brand-700 px-1.5 py-0.5 rounded hover:bg-brand-50 capitalize">
+                                {d.type.replace(/_/g, ' ')}
+                              </a>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${KYC_STATUS_COLORS[req.status] ?? 'bg-slate-100 text-slate-600'}`}>{req.status.replace('_', ' ')}</span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-400 text-xs">{timeAgo(req.submittedAt)}</td>
+                        <td className="py-3 px-4">
+                          {(req.status === 'pending' || req.status === 'under_review') && (
+                            <div className="flex gap-1.5">
+                              <button
+                                disabled={kycReviewing === req.id}
+                                onClick={() => handleKycReview(req.id, 'approved')}
+                                className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-lg font-medium hover:bg-green-200 disabled:opacity-50"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                disabled={kycReviewing === req.id}
+                                onClick={() => handleKycReview(req.id, 'rejected', 'Documents insufficient')}
+                                className="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-lg font-medium hover:bg-red-200 disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

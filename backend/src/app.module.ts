@@ -16,6 +16,7 @@ import { HealthModule } from './modules/health/health.module';
 import { CartModule } from './modules/cart/cart.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { VerificationModule } from './modules/verification/verification.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     CartModule,
     StorageModule,
     AnalyticsModule,
+    VerificationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
