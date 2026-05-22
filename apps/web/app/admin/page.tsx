@@ -1,19 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   BarChart3, Users, Package, ShoppingCart, AlertTriangle,
-  TrendingUp, DollarSign, Shield, Store, ChevronRight, CheckCircle2,
+  TrendingUp, DollarSign, Shield, Store, CheckCircle2, RefreshCw,
 } from 'lucide-react'
-import { sellers, products, mockOrders } from '@/lib/data'
+import { sellers as mockSellers, products, mockOrders } from '@/lib/data'
 import { formatKES, timeAgo } from '@/lib/utils'
+import { api, type ApiOrder, type ApiSeller } from '@/lib/api'
 
-const platformStats = [
-  { label: 'Gross Merchandise Value', value: formatKES(12_450_000), icon: DollarSign, color: 'text-brand-600 bg-brand-100', change: '+18.4%' },
-  { label: 'Active Sellers', value: String(sellers.length), icon: Store, color: 'text-violet-600 bg-violet-100', change: '+12' },
-  { label: 'Total Products', value: String(products.length), icon: Package, color: 'text-blue-600 bg-blue-100', change: '+45' },
-  { label: 'Orders This Month', value: '1,248', icon: ShoppingCart, color: 'text-green-600 bg-green-100', change: '+23.1%' },
-]
 
 const badgeColors: Record<string, string> = {
   authorized: 'bg-blue-100 text-blue-700',
@@ -31,8 +26,58 @@ const statusColors: Record<string, string> = {
   confirmed: 'bg-teal-100 text-teal-700',
 }
 
+const ORDER_STATUSES = ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'orders'>('overview')
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [liveSellers, setLiveSellers] = useState<ApiSeller[]>([])
+  const [totalOrders, setTotalOrders] = useState(0)
+  const [orderPage, setOrderPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [isLive, setIsLive] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+
+  const fetchOrders = useCallback(async (page = 1, status?: string) => {
+    setLoading(true)
+    const result = await api.adminGetAllOrders(page, status)
+    if (result) {
+      setOrders(result.data)
+      setTotalOrders(result.total)
+      setIsLive(true)
+    } else {
+      setOrders(mockOrders.map((o: any) => ({ ...o, orderNumber: o.id, paymentStatus: 'paid', items: [], tax: 0, deliveryFee: 0, discount: 0, subtotal: o.total, mpesaReceiptNumber: null, mpesaTransactionId: null, shippingAddress: {} })))
+      setIsLive(false)
+    }
+    setLoading(false)
+  }, [])
+
+  const fetchSellers = useCallback(async () => {
+    const result = await api.adminGetSellers()
+    if (result) setLiveSellers(result.data)
+  }, [])
+
+  useEffect(() => { fetchOrders(orderPage, statusFilter) }, [orderPage, statusFilter, fetchOrders])
+  useEffect(() => { fetchSellers() }, [fetchSellers])
+
+  const handleStatusChange = async (orderId: string, status: string) => {
+    setUpdatingId(orderId)
+    await api.adminUpdateOrderStatus(orderId, status)
+    await fetchOrders(orderPage, statusFilter)
+    setUpdatingId(null)
+  }
+
+  const displaySellers = liveSellers.length > 0
+    ? liveSellers.map((s) => ({ ...s, name: s.businessName, isVerified: s.verified, productCount: 0, totalRevenue: s.salesCount * 5000 }))
+    : mockSellers
+
+  const platformStats = [
+    { label: 'Active Sellers', value: isLive ? String(liveSellers.length) : String(mockSellers.length), icon: Store, color: 'text-violet-600 bg-violet-100', change: '' },
+    { label: 'Total Products', value: String(products.length), icon: Package, color: 'text-blue-600 bg-blue-100', change: '' },
+    { label: 'Total Orders', value: isLive ? totalOrders.toLocaleString() : '1,248', icon: ShoppingCart, color: 'text-green-600 bg-green-100', change: '' },
+    { label: 'API Status', value: isLive ? 'Live' : 'Mock', icon: DollarSign, color: isLive ? 'text-green-600 bg-green-100' : 'text-orange-600 bg-orange-100', change: '' },
+  ]
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -50,6 +95,14 @@ export default function AdminPage() {
           All Systems Operational
         </div>
       </div>
+
+      {/* Live indicator */}
+      {isLive && (
+        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1.5 w-fit mb-4">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+          Connected to live API
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -150,26 +203,24 @@ export default function AdminPage() {
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Seller</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Location</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Products</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Rating</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Revenue</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Sales</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Badge</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {sellers.map((seller) => (
+                {displaySellers.map((seller) => (
                   <tr key={seller.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4">
                       <p className="font-semibold text-slate-800">{seller.name}</p>
                       <p className="text-xs text-slate-400">{seller.salesCount.toLocaleString()} sales</p>
                     </td>
-                    <td className="py-3 px-4 text-slate-600">{seller.location}</td>
-                    <td className="py-3 px-4 text-slate-600">{seller.productCount}</td>
+                    <td className="py-3 px-4 text-slate-600">{seller.location ?? '—'}</td>
                     <td className="py-3 px-4">
                       <span className="text-yellow-600 font-medium">★ {seller.rating}</span>
                     </td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">{formatKES(seller.totalRevenue)}</td>
+                    <td className="py-3 px-4 text-slate-600">{seller.salesCount?.toLocaleString() ?? 0}</td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${badgeColors[seller.badge]}`}>
                         {seller.badge}
@@ -194,39 +245,94 @@ export default function AdminPage() {
 
       {/* Orders */}
       {activeTab === 'orders' && (
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Order ID</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Customer</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">County</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Total</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Payment</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {mockOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-medium text-brand-700">{order.id}</td>
-                    <td className="py-3 px-4 font-medium text-slate-800">{order.customerName}</td>
-                    <td className="py-3 px-4 text-slate-600">{order.county}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">{formatKES(order.total)}</td>
-                    <td className="py-3 px-4 text-slate-600 capitalize">{order.paymentMethod}</td>
-                    <td className="py-3 px-4">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[order.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 text-xs">{timeAgo(order.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-slate-500">Filter:</span>
+            {[undefined, ...ORDER_STATUSES].map((s) => (
+              <button
+                key={s ?? 'all'}
+                onClick={() => { setStatusFilter(s); setOrderPage(1) }}
+                className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors capitalize ${
+                  statusFilter === s
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                {s ?? 'All'}
+              </button>
+            ))}
+            <button onClick={() => fetchOrders(orderPage, statusFilter)} className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800">
+              <RefreshCw size={12} />{loading ? 'Loading…' : 'Refresh'}
+            </button>
           </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Order</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Customer</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Total</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Payment</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Date</th>
+                    {isLive && <th className="text-left py-3 px-4 font-semibold text-slate-600 text-xs">Update</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-brand-700">{order.orderNumber}</p>
+                        <p className="text-xs text-slate-400">{order.id.slice(0, 8)}…</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-slate-800">{(order.shippingAddress as any)?.name ?? '—'}</p>
+                        <p className="text-xs text-slate-400">{order.paymentMethod}</p>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-800">{formatKES(order.total)}</td>
+                      <td className="py-3 px-4">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                          order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>{order.paymentStatus}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[order.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 text-xs">{timeAgo(order.createdAt)}</td>
+                      {isLive && (
+                        <td className="py-3 px-4">
+                          <select
+                            defaultValue={order.status}
+                            disabled={updatingId === order.id}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                          >
+                            {ORDER_STATUSES.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
+                          </select>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {isLive && totalOrders > 20 && (
+            <div className="flex items-center justify-between text-sm text-slate-500">
+              <span>Showing {((orderPage - 1) * 20) + 1}–{Math.min(orderPage * 20, totalOrders)} of {totalOrders}</span>
+              <div className="flex gap-2">
+                <button disabled={orderPage <= 1} onClick={() => setOrderPage((p) => p - 1)} className="px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-slate-50">← Prev</button>
+                <button disabled={orderPage * 20 >= totalOrders} onClick={() => setOrderPage((p) => p + 1)} className="px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-slate-50">Next →</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

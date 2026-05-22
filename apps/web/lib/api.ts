@@ -283,6 +283,20 @@ export interface ApiStkQueryResponse {
   isPaid: boolean
 }
 
+// ─── Review Types ──────────────────────────────────────────────────────────
+
+export interface ApiReview {
+  id: string
+  rating: number
+  title: string | null
+  body: string | null
+  isVerifiedPurchase: boolean
+  createdAt: string
+  user: { id: string; name: string }
+  sellerId: string | null
+  sellerResponse: string | null
+}
+
 // ─── API Methods ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -389,4 +403,23 @@ export const api = {
 
   queryMpesaStatus: (checkoutRequestId: string) =>
     apiFetch<ApiStkQueryResponse>(`/payments/mpesa/query/${checkoutRequestId}`),
+
+  // Reviews (public)
+  getProductReviews: (productId: string) =>
+    apiFetch<{ data: ApiReview[]; total: number }>(`/reviews/product/${productId}`),
+
+  // Admin
+  adminGetAllOrders: (page = 1, status?: string) =>
+    apiFetch<{ data: ApiOrder[]; total: number }>(
+      `/orders?page=${page}${status ? `&status=${status}` : ''}`
+    ),
+
+  adminUpdateOrderStatus: (orderId: string, status: string) =>
+    apiFetch<ApiOrder>(`/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: { status },
+    }),
+
+  adminGetSellers: (page = 1, pageSize = 50) =>
+    apiFetch<{ data: ApiSeller[]; total: number }>(`/sellers?page=${page}&pageSize=${pageSize}`),
 }
