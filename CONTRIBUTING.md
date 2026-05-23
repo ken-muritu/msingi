@@ -33,6 +33,7 @@ pnpm dev
 - **Backend** → http://localhost:4000
 - **Swagger** → http://localhost:4000/api/docs
 - **Demo store** → http://localhost:3000/products
+- **Msingi Store** → `pnpm --filter @msingi/store dev` → http://localhost:3001
 
 ### Seed Credentials
 
@@ -48,7 +49,8 @@ pnpm dev
 
 ```
 msingi/
-├── apps/web/           → @msingi/web (Next.js 14 frontend)
+├── apps/web/           → @msingi/web (Next.js 14 framework site + reference store)
+├── apps/store/         → @msingi/store (Msingi-branded demo storefront)
 ├── backend/            → @msingi/backend (NestJS 10 API)
 ├── packages/types/     → @msingi/types (MsingiConfig type system)
 ├── packages/config/    → @msingi/config (config loader + helpers)
@@ -62,9 +64,12 @@ msingi/
 | Path | Package | Description |
 |------|---------|-------------|
 | `apps/web/app/` | `@msingi/web` | Next.js App Router pages |
-| `apps/web/components/landing/` | `@msingi/web` | Framework landing page (8 components) |
-| `apps/web/components/home/` | `@msingi/web` | Store homepage (Jenga reference) |
+| `apps/web/components/landing/` | `@msingi/web` | Framework landing page (9 components incl. Showcase) |
+| `apps/web/components/home/` | `@msingi/web` | Store homepage (reference implementation) |
 | `apps/web/lib/` | `@msingi/web` | API client, hooks, stores, utils |
+| `apps/store/app/` | `@msingi/store` | Demo storefront pages (11 routes) |
+| `apps/store/components/` | `@msingi/store` | DemoBanner, Navbar, Footer, BottomNav, ProductCard |
+| `apps/store/lib/` | `@msingi/store` | clientConfig, mock data (12 products), Zustand stores |
 | `backend/src/modules/` | `@msingi/backend` | 12 NestJS domain modules + global AnalyticsModule |
 | `backend/src/types/` | `@msingi/backend` | Custom type declarations (`africastalking.d.ts`) |
 | `backend/prisma/` | `@msingi/backend` | Schema (14 models) + seed data |
@@ -78,7 +83,7 @@ msingi/
 ### Frontend (apps/web)
 
 - **Framework**: Next.js 14 with App Router
-- **Styling**: Tailwind CSS (dark theme for landing, store theme for demo)
+- **Styling**: Tailwind CSS (dark theme for landing, indigo/violet for store)
 - **State**: Zustand (cart, wishlist, compare)
 - **API layer**: Typed fetch client with automatic fallback to mock data
 - **Landing page**: 8 components in `components/landing/`
@@ -115,7 +120,8 @@ pnpm dev:backend                      # Backend only
 
 # Building
 pnpm build                            # Build all packages
-pnpm --filter @msingi/web build       # Build frontend
+pnpm --filter @msingi/web build       # Build framework site
+pnpm --filter @msingi/store build     # Build demo storefront
 pnpm --filter @msingi/backend build   # Build backend
 pnpm --filter @msingi/types build     # Build types package
 pnpm --filter @msingi/config build    # Build config package

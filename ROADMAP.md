@@ -1,8 +1,8 @@
 # MSINGI — Production Roadmap
 
-> Phase 1 + 2 + 3 complete. Phase 4 in progress.
+> Phase 1 + 2 + 3 complete. Phase 3.5 (Storefront) complete. Phase 4 in progress.
 
-**Current stage:** Production-ready — live backend API, M-PESA payments, API-persisted cart, real notifications, MeiliSearch, R2 storage, PostHog analytics, Docker + CI/CD, PWA/offline, security hardening, KYC/verification, multi-tenancy, admin dashboard, 35 passing tests (Jest + Playwright).
+**Current stage:** Production-ready — live backend API, M-PESA payments, API-persisted cart, real notifications, MeiliSearch, R2 storage, PostHog analytics, Docker + CI/CD, PWA/offline, security hardening, KYC/verification, multi-tenancy, admin dashboard, 35 passing tests (Jest + Playwright). Plus a fully-branded demo storefront at [msingistore.vercel.app](https://msingistore.vercel.app) and 3 showcase stores.
 
 ---
 
@@ -25,6 +25,9 @@
 | 13 | Docker containerization | ✅ Done | Multi-stage, non-root, migrate on start |
 | 14 | Testing suite | ✅ Done | 35 tests — Jest (3 suites) + Playwright E2E (4 suites) |
 | 15 | Documentation site | 🔜 Pending | Docusaurus |
+| 21 | Demo storefront (`apps/store`) | ✅ Done | [msingistore.vercel.app](https://msingistore.vercel.app) — Msingi-branded, standalone |
+| 22 | Showcase section (landing page) | ✅ Done | Varidi, Aang Web, AddPlus on `#showcase` |
+| 23 | Vercel corepack fix | ✅ Done | Pin pnpm@9.1.0 via corepack; `--no-frozen-lockfile` |
 | 16 | CI/CD pipeline | ✅ Done | GitHub Actions ci.yml + deploy.yml |
 | 17 | Company legal entity | 🔜 Pending | Kenya BRS |
 | 18 | KYC / trust systems | ✅ Done | `VerificationModule` — R2 upload, tier workflow, admin approval |
@@ -105,11 +108,23 @@
 - [ ] `supertest` integration tests for API endpoints (deferred)
 - [ ] Sentry integration for production error tracking (deferred)
 
-### Week 10 — Docs + Admin ✅
+### Week 10 — Docs + Admin + Storefront ✅
 
 - [x] Admin dashboard — `/admin` with dark-theme sidebar layout
 - [x] Admin: orders (search + filter + status update), sellers, KYC review, tenant provisioning
 - [x] `TESTING.md` — integration testing guide with real M-PESA, R2, SMS, WhatsApp
+- [x] `apps/store` — standalone Msingi-branded demo storefront (11 routes, 12 products)
+  - Home: hero, flash countdown, trending, brand strip, trust badges
+  - Products: listing + filters, detail page + sticky mobile buy bar
+  - Cart: coupon codes, free delivery progress bar
+  - Checkout: 3-step (contact, shipping, payment)
+  - Wishlist: move-all-to-cart, empty state
+  - Account: hub, login, register (with password strength meter)
+  - 404 page, loading skeleton, DemoBanner ("Powered by Msingi")
+  - Msingi indigo/violet brand palette, Inter font, polished CSS utilities
+- [x] Showcase section on landing page — 3 live stores (Varidi, Aang Web, AddPlus) + official demo CTA
+- [x] Vercel monorepo deployment fixed — corepack pnpm@9.1.0, `--no-frozen-lockfile`
+- [x] Merged `store` branch into `main`, deleted remote branch
 - [ ] Docusaurus docs site — deferred to Phase 4
 - [ ] Fashion vertical template: `templates/fashion/` — deferred
 
@@ -141,8 +156,9 @@
   - **Starter** — single store, shared hosting, email support
   - **Business** — multi-seller, dedicated hosting, WhatsApp + priority support
   - **Enterprise** — multi-tenant, custom dev, SLA, training
-- [ ] Demo site with live Jenga Electronics data
-- [ ] Case study document (Jenga as reference)
+- [x] Demo site live: [msingistore.vercel.app](https://msingistore.vercel.app)
+- [x] Showcase stores: Varidi, Aang Web, AddPlus
+- [ ] Case study document (stores as reference)
 - [ ] Competitor comparison: Msingi vs Shopify vs Jumia vs custom
 
 ### Week 15 — Client Acquisition

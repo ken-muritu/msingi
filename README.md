@@ -5,6 +5,7 @@
 > Deploy a complete African commerce business in weeks, not months. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
 
 [![Live](https://img.shields.io/badge/landing-msingios.vercel.app-black?style=flat-square)](https://msingios.vercel.app)
+[![Store](https://img.shields.io/badge/store-msingistore.vercel.app-6366F1?style=flat-square)](https://msingistore.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](#license)
 [![Stage](https://img.shields.io/badge/stage-production%20ready-brightgreen?style=flat-square)](#current-status)
 [![CI](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml/badge.svg)](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml)
@@ -30,6 +31,8 @@ Msingi is **production-ready** — a fully wired backend API, live M-PESA paymen
 | Component | Status | Details |
 |-----------|--------|----------|
 | Landing page | ✅ Live | [msingios.vercel.app](https://msingios.vercel.app) |
+| Demo storefront | ✅ Live | [msingistore.vercel.app](https://msingistore.vercel.app) — `apps/store` |
+| Showcase stores | ✅ Live | [varidi.vercel.app](https://varidi.vercel.app), [aangweb.vercel.app](https://aangweb.vercel.app), [addplus.vercel.app](https://addplus.vercel.app) |
 | JWT Authentication | ✅ Production | Global `JwtAuthGuard`, `@Public()` decorator, role-based access |
 | M-PESA Daraja API | ✅ Live | STK Push, STK Query, callback validation, reversal |
 | Checkout flow | ✅ Wired | Order creation → STK Push → 90s polling → confirmation |
@@ -90,43 +93,64 @@ Modular monolith (Turborepo monorepo) — single deployable with module composab
 ```
 msingi/
 ├── apps/
-│   └── web/                   # @msingi/web — Next.js 14 frontend
+│   ├── web/                   # @msingi/web — Next.js 14 framework site + reference store
+│   │   ├── app/               # App Router pages
+│   │   │   ├── page.tsx       # Landing page (Hero → Features → Modules → Arch → Demo → Showcase → GetStarted)
+│   │   │   ├── layout.tsx     # Root layout (dark theme, MsingiNav, MsingiFooter)
+│   │   │   ├── globals.css    # Tailwind base + dark theme styles
+│   │   │   ├── manifest.ts    # PWA manifest (installable, theme colour)
+│   │   │   ├── sw.ts          # Serwist service worker (offline cache)
+│   │   │   ├── offline/       # Offline fallback page
+│   │   │   ├── admin/         # Admin dashboard — layout + page (orders, sellers, KYC, tenants)
+│   │   │   ├── products/      # Product listing + detail pages
+│   │   │   ├── seller/        # Seller dashboard, product management
+│   │   │   ├── cart/          # Shopping cart
+│   │   │   ├── checkout/      # Checkout + M-PESA payment
+│   │   │   └── ...            # account, deals, compare, wishlist, live
+│   │   ├── components/
+│   │   │   ├── landing/       # Framework landing page (9 components)
+│   │   │   │   ├── Hero.tsx           # Headline, terminal preview, stats
+│   │   │   │   ├── Features.tsx       # 8 feature cards (M-PESA, WhatsApp, etc.)
+│   │   │   │   ├── Modules.tsx        # 10 backend modules with status
+│   │   │   │   ├── Architecture.tsx   # Tech stack grid + monorepo tree
+│   │   │   │   ├── Demo.tsx           # Interactive API response viewer
+│   │   │   │   ├── Showcase.tsx       # Live stores built on Msingi (3 + official demo)
+│   │   │   │   ├── GetStarted.tsx     # 4-step setup + seed credentials
+│   │   │   │   ├── MsingiNav.tsx      # Dark glassmorphism navbar
+│   │   │   │   └── MsingiFooter.tsx   # Minimal dark footer
+│   │   │   ├── home/          # Store homepage sections (reference impl)
+│   │   │   ├── layout/        # Store layout (Navbar, Footer, CartSidebar, BottomNav)
+│   │   │   ├── products/      # ProductCard, CompareBar
+│   │   │   ├── checkout/      # MPesaModal (wired to live STK Push + polling)
+│   │   │   └── providers/     # PostHogProvider (pageview tracking)
+│   │   ├── lib/
+│   │   │   ├── api.ts         # Typed Msingi API client — auth, cart, orders, payments
+│   │   │   ├── hooks.ts       # React hooks — useProducts, useAuth, useCart, useOrders
+│   │   │   ├── posthog.ts     # PostHog init + browser client
+│   │   │   ├── data.ts        # Static mock data (fallback when API unavailable)
+│   │   │   ├── store.ts       # Zustand stores — cart, wishlist, compare, auth
+│   │   │   └── utils.ts       # Helpers (formatKES, WhatsApp messages, etc.)
+│   │   └── vercel.json        # Vercel monorepo deployment config
+│   │
+│   └── store/                 # @msingi/store — Demo storefront (Msingi-branded)
 │       ├── app/               # App Router pages
-│       │   ├── page.tsx       # Landing page (Hero → Features → Modules → Arch → Demo → GetStarted)
-│       │   ├── layout.tsx     # Root layout (dark theme, MsingiNav, MsingiFooter)
-│       │   ├── globals.css    # Tailwind base + dark theme styles
-│       │   ├── manifest.ts    # PWA manifest (installable, theme colour)
-│       │   ├── sw.ts          # Serwist service worker (offline cache)
-│       │   ├── offline/       # Offline fallback page
-│       │   ├── admin/         # Admin dashboard — layout + page (orders, sellers, KYC, tenants)
-│       │   ├── products/      # Product listing + detail pages
-│       │   ├── seller/        # Seller dashboard, product management
-│       │   ├── cart/          # Shopping cart
-│       │   ├── checkout/      # Checkout + M-PESA payment
-│       │   └── ...            # account, deals, compare, wishlist, live
+│       │   ├── page.tsx       # Home — hero, flash sale countdown, trending, brands strip
+│       │   ├── layout.tsx     # Root layout (DemoBanner, Navbar, Footer, BottomNav)
+│       │   ├── globals.css    # Tailwind + Msingi indigo/violet brand palette
+│       │   ├── not-found.tsx  # Custom 404 page
+│       │   ├── products/      # Product listing + loading skeleton + detail page
+│       │   ├── cart/          # Cart with coupon codes + free delivery progress bar
+│       │   ├── checkout/      # 3-step checkout (contact, shipping, payment)
+│       │   ├── wishlist/      # Wishlist with move-all-to-cart
+│       │   └── account/       # Account hub + login + register pages
 │       ├── components/
-│       │   ├── landing/       # Framework landing page (8 components)
-│       │   │   ├── Hero.tsx           # Headline, terminal preview, stats
-│       │   │   ├── Features.tsx       # 8 feature cards (M-PESA, WhatsApp, etc.)
-│       │   │   ├── Modules.tsx        # 10 backend modules with status
-│       │   │   ├── Architecture.tsx   # Tech stack grid + monorepo tree
-│       │   │   ├── Demo.tsx           # Interactive API response viewer
-│       │   │   ├── GetStarted.tsx     # 4-step setup + seed credentials
-│       │   │   ├── MsingiNav.tsx      # Dark glassmorphism navbar
-│       │   │   └── MsingiFooter.tsx   # Minimal dark footer
-│       │   ├── home/          # Store homepage sections (Jenga reference impl)
-│       │   ├── layout/        # Store layout (Navbar, Footer, CartSidebar, BottomNav)
-│       │   ├── products/      # ProductCard, CompareBar
-│       │   ├── checkout/      # MPesaModal (wired to live STK Push + polling)
-│       │   └── providers/     # PostHogProvider (pageview tracking)
+│       │   ├── layout/        # DemoBanner, Navbar, Footer, BottomNav
+│       │   └── product/       # ProductCard
 │       ├── lib/
-│       │   ├── api.ts         # Typed Msingi API client — auth, cart, orders, payments
-│       │   ├── hooks.ts       # React hooks — useProducts, useAuth, useCart, useOrders
-│       │   ├── posthog.ts     # PostHog init + browser client
-│       │   ├── data.ts        # Static mock data (fallback when API unavailable)
-│       │   ├── store.ts       # Zustand stores — cart, wishlist, compare, auth
-│       │   └── utils.ts       # Helpers (formatKES, WhatsApp messages, etc.)
-│       └── vercel.json        # Vercel monorepo deployment config
+│       │   ├── config.ts      # clientConfig — branding, categories, payments, SEO
+│       │   ├── data.ts        # 12 mock products + reviews + helper functions
+│       │   └── store.ts       # Zustand — cart, wishlist, compare (localStorage)
+│       └── vercel.json        # Vercel config (corepack + pnpm@9.1.0)
 │
 ├── backend/                   # @msingi/backend — NestJS API server
 │   ├── src/
@@ -224,9 +248,30 @@ import { defineConfig, getConfig, isModuleEnabled, formatPrice } from '@msingi/c
 
 ---
 
-## Reference Implementation
+## Live Demos & Showcase
 
-**Jenga Electronics** — Kenya's premier electronics marketplace, built on Msingi.
+### Official Demo Store
+
+**Msingi Store** — [msingistore.vercel.app](https://msingistore.vercel.app)
+
+A fully-featured electronics storefront demonstrating the Msingi platform:
+- Indigo/violet Msingi brand identity + "Powered by Msingi" demo banner
+- Home page with hero, flash sale countdown, trending products, brand strip
+- Product listing with filters, detail page with sticky mobile buy bar
+- Cart with coupon codes (`JENGA10`, `WELCOME5`, `FLASH20`) + free delivery progress bar
+- 3-step checkout (contact, shipping, M-PESA/card/COD payment)
+- Wishlist, account login/register, 404 page, loading skeletons
+- Deployed from `apps/store/` on Vercel (Root Directory: `apps/store`)
+
+### Stores Built on Msingi
+
+| Store | URL | Vertical |
+|-------|-----|----------|
+| Varidi | [varidi.vercel.app](https://varidi.vercel.app) | Fashion & Lifestyle |
+| Aang Web | [aangweb.vercel.app](https://aangweb.vercel.app) | Electronics & Tech |
+| AddPlus | [addplus.vercel.app](https://addplus.vercel.app) | Multi-vendor Marketplace |
+
+### Reference Config
 
 - **Config**: `jenga.config.ts`
 - **Template**: `templates/electronics/`
@@ -285,7 +330,8 @@ pnpm dev:backend      # Backend only  → http://localhost:4000
 - **Landing page**: http://localhost:3000 (Msingi framework site)
 - **Swagger API docs**: http://localhost:4000/api/docs
 - **Health check**: http://localhost:4000/api/v1/health
-- **Demo store** (Jenga reference): http://localhost:3000/products
+- **Demo store** (reference): http://localhost:3000/products
+- **Msingi Store** (standalone): run `pnpm --filter @msingi/store dev` → http://localhost:3001
 
 ### Seed Credentials
 
@@ -389,15 +435,25 @@ export default config;
 
 ### Vercel (Frontend)
 
-The `apps/web/vercel.json` handles monorepo builds automatically.
+Both frontend apps have their own `vercel.json` with corepack-pinned pnpm@9.1.0.
+
+#### Landing site (`apps/web`)
 
 1. Import the repo in Vercel
 2. Set **Root Directory** to `apps/web`
 3. Add env: `NEXT_PUBLIC_API_URL=https://your-api.example.com/api/v1`
-4. Deploy
+4. Deploy → [msingios.vercel.app](https://msingios.vercel.app)
+
+#### Demo storefront (`apps/store`)
+
+1. Import the repo in Vercel (new project)
+2. Set **Root Directory** to `apps/store`
+3. Branch: `main`
+4. Deploy → [msingistore.vercel.app](https://msingistore.vercel.app)
 
 The landing page is fully static — no backend needed for the framework site.
-The demo store pages (`/products`, `/cart`, etc.) fall back to mock data without a backend URL.
+The demo store runs entirely on mock data (no backend required).
+The reference store pages in `apps/web` (`/products`, `/cart`, etc.) fall back to mock data without a backend URL.
 
 ### Backend (Render — fully configured)
 
