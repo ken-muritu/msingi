@@ -3,6 +3,7 @@ import Features from '@/components/landing/Features'
 import Modules from '@/components/landing/Modules'
 import Architecture from '@/components/landing/Architecture'
 import Demo from '@/components/landing/Demo'
+import Showcase from '@/components/landing/Showcase'
 import GetStarted from '@/components/landing/GetStarted'
 
 export default function HomePage() {
@@ -13,6 +14,7 @@ export default function HomePage() {
       <Modules />
       <Architecture />
       <Demo />
+      <Showcase />
       <GetStarted />
     </>
   )

@@ -9,6 +9,7 @@ const navLinks = [
   { href: '#modules', label: 'Modules' },
   { href: '#architecture', label: 'Architecture' },
   { href: '#demo', label: 'Demo' },
+  { href: '#showcase', label: 'Showcase' },
 ]
 
 export default function MsingiNav() {
