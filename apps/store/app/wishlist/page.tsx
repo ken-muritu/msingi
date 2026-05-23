@@ -10,6 +10,12 @@ export default function WishlistPage() {
   const { items, toggle } = useWishlistStore()
   const addToCart = useCartStore((s) => s.addItem)
 
+  const moveAllToCart = () => {
+    items.forEach((item) =>
+      addToCart({ id: item.id, name: item.name, brand: item.brand, price: item.price, image: item.image, category: item.category, sellerId: '', sellerName: '' })
+    )
+  }
+
   if (items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
@@ -25,7 +31,15 @@ export default function WishlistPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">My Wishlist ({items.length})</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">My Wishlist ({items.length})</h1>
+        <button
+          onClick={moveAllToCart}
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+        >
+          <ShoppingCart size={14} /> Move All to Cart
+        </button>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {items.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">

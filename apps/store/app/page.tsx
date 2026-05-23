@@ -1,11 +1,41 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Zap, Truck, Shield, RotateCcw, MessageCircle, ChevronRight } from 'lucide-react'
+import { Zap, Truck, Shield, RotateCcw, MessageCircle, ChevronRight, TrendingUp } from 'lucide-react'
 import { clientConfig } from '@/lib/config'
-import { products, getFeaturedProducts, getFlashSaleProducts, formatKES } from '@/lib/data'
+import { products, getFeaturedProducts, getFlashSaleProducts } from '@/lib/data'
 import ProductCard from '@/components/product/ProductCard'
+
+const BRANDS = ['Samsung', 'Apple', 'LG', 'Sony', 'Dell', 'Canon', 'JBL']
+
+function FlashCountdown() {
+  const [time, setTime] = useState({ h: 4, m: 0, s: 0 })
+  useEffect(() => {
+    const t = setInterval(() => {
+      setTime((prev) => {
+        let { h, m, s } = prev
+        if (s > 0) return { h, m, s: s - 1 }
+        if (m > 0) return { h, m: m - 1, s: 59 }
+        if (h > 0) return { h: h - 1, m: 59, s: 59 }
+        return { h: 3, m: 59, s: 59 }
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    <div className="flex items-center gap-1 text-sm font-mono">
+      {[pad(time.h), pad(time.m), pad(time.s)].map((v, i) => (
+        <span key={i} className="flex items-center gap-1">
+          <span className="bg-red-600 text-white px-1.5 py-0.5 rounded-lg font-bold">{v}</span>
+          {i < 2 && <span className="text-red-600 font-bold">:</span>}
+        </span>
+      ))}
+    </div>
+  )
+}
 
 const CATEGORY_IMAGES: Record<string, string> = {
   smartphones:      'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&q=75',
@@ -21,6 +51,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 export default function HomePage() {
   const featured = getFeaturedProducts(8)
   const flashSale = getFlashSaleProducts(4)
+  const trending = products.filter((p) => p.isTrending).slice(0, 4)
 
   return (
     <div className="space-y-12 pb-8">
@@ -115,9 +146,10 @@ export default function HomePage() {
       {flashSale.length > 0 && (
         <section className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 flex-wrap">
               <Zap size={20} className="text-orange-500 fill-orange-500" /> Flash Sale
-              <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">Limited time</span>
+              <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">Ends in</span>
+              <FlashCountdown />
             </h2>
             <Link href="/products?sale=flash" className="text-sm text-brand-600 hover:underline font-medium flex items-center gap-1">
               See all <ChevronRight size={14} />
@@ -139,6 +171,39 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+        </div>
+      </section>
+
+      {/* ── Trending ── */}
+      {trending.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp size={20} className="text-pink-500" /> Trending Now
+            </h2>
+            <Link href="/products?sort=trending" className="text-sm text-brand-600 hover:underline font-medium flex items-center gap-1">
+              See all <ChevronRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {trending.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
+
+      {/* ── Brand strip ── */}
+      <section className="max-w-7xl mx-auto px-4">
+        <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Authorised Brands</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {BRANDS.map((brand) => (
+            <Link
+              key={brand}
+              href={`/products?search=${brand}`}
+              className="px-5 py-2.5 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-600 hover:border-brand-300 hover:text-brand-700 hover:shadow-sm transition-all"
+            >
+              {brand}
+            </Link>
+          ))}
         </div>
       </section>
 

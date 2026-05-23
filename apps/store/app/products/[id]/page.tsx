@@ -68,6 +68,19 @@ function ProductDetail({
     router.push('/checkout')
   }
 
+  const [stickyVisible, setStickyVisible] = useState(false)
+
+  useEffect(() => {
+    const el = document.getElementById('product-actions')
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => setStickyVisible(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-80px 0px 0px 0px' }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   const badgeLabel: Record<string, string> = {
     authorized: '🔵 Authorized Distributor',
     premium: '🟣 Premium Seller',
@@ -77,6 +90,21 @@ function ProductDetail({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Sticky mobile buy bar */}
+      {stickyVisible && (
+        <div className="lg:hidden fixed bottom-16 inset-x-0 z-30 bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-3 shadow-lg animate-slide-up">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-slate-500 truncate">{product.name}</p>
+            <p className="font-bold text-slate-900">{formatKES(product.price)}</p>
+          </div>
+          <button onClick={handleAddToCart} disabled={!product.inStock} className="bg-brand-600 hover:bg-brand-700 disabled:bg-slate-200 text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-1.5 transition-colors">
+            <ShoppingCart size={15} /> Add
+          </button>
+          <button onClick={handleBuyNow} disabled={!product.inStock} className="bg-[#00A651] hover:bg-[#008742] disabled:bg-slate-200 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors">
+            Buy Now
+          </button>
+        </div>
+      )}
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-6 flex-wrap">
         <Link href="/" className="hover:text-brand-600 transition-colors">Home</Link>
@@ -138,6 +166,7 @@ function ProductDetail({
           </div>
 
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
+          <p className="text-slate-600 text-sm leading-relaxed">{product.description}</p>
 
           <div className="flex items-center gap-2">
             <div className="flex">
@@ -197,7 +226,7 @@ function ProductDetail({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-3" id="product-actions">
             <button
               onClick={handleAddToCart}
               disabled={!product.inStock}

@@ -1,17 +1,39 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, Truck, MessageCircle } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, Truck, MessageCircle, Ticket } from 'lucide-react'
 import { useCartStore, useCartTotal } from '@/lib/store'
 import { formatKES } from '@/lib/data'
 import { clientConfig } from '@/lib/config'
 
+const VALID_COUPONS: Record<string, number> = {
+  JENGA10: 10,
+  WELCOME5: 5,
+  FLASH20: 20,
+}
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart } = useCartStore()
   const subtotal = useCartTotal()
-  const deliveryFee = subtotal >= clientConfig.business.freeDeliveryThreshold ? 0 : clientConfig.business.standardDelivery
-  const total = subtotal + deliveryFee
+  const [coupon, setCoupon] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const discountPct = appliedCoupon ? VALID_COUPONS[appliedCoupon] : 0
+  const discountAmt = Math.round(subtotal * discountPct / 100)
+  const deliveryFee = (subtotal - discountAmt) >= clientConfig.business.freeDeliveryThreshold ? 0 : clientConfig.business.standardDelivery
+  const total = subtotal - discountAmt + deliveryFee
+
+  const applyCoupon = () => {
+    const code = coupon.toUpperCase().trim()
+    if (VALID_COUPONS[code]) {
+      setAppliedCoupon(code)
+      setCouponError('')
+    } else {
+      setCouponError('Invalid coupon code')
+    }
+  }
 
   const whatsappMessage = encodeURIComponent(
     `Hi! I'd like to order:\n\n${items.map((i) => `• ${i.name} x${i.quantity} — ${formatKES(i.price * i.quantity)}`).join('\n')}\n\nTotal: ${formatKES(total)}`
@@ -77,24 +99,63 @@ export default function CartPage() {
 
         {/* Summary */}
         <div className="space-y-3">
+          {/* Free delivery progress */}
+          {deliveryFee > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+              <p className="text-xs text-slate-600 mb-2 flex items-center gap-1.5">
+                <Truck size={13} className="text-brand-600" />
+                Add <span className="font-bold text-brand-600">{formatKES(clientConfig.business.freeDeliveryThreshold - (subtotal - discountAmt))}</span> more for free delivery
+              </p>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-brand-600 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, ((subtotal - discountAmt) / clientConfig.business.freeDeliveryThreshold) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
             <h2 className="font-bold text-slate-900 mb-4">Order Summary</h2>
+
+            {/* Coupon */}
+            <div className="mb-4">
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-sm">
+                  <span className="flex items-center gap-1.5 text-green-700 font-semibold"><Ticket size={13} /> {appliedCoupon} (−{discountPct}%)</span>
+                  <button onClick={() => { setAppliedCoupon(null); setCoupon('') }} className="text-green-500 hover:text-green-700 text-xs">Remove</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={coupon}
+                    onChange={(e) => { setCoupon(e.target.value); setCouponError('') }}
+                    placeholder="Coupon code"
+                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  <button onClick={applyCoupon} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-700 transition-colors">Apply</button>
+                </div>
+              )}
+              {couponError && <p className="text-xs text-red-500 mt-1">{couponError}</p>}
+            </div>
+
             <dl className="space-y-2 text-sm mb-4">
               <div className="flex justify-between text-slate-600">
                 <dt>Subtotal ({items.reduce((t, i) => t + i.quantity, 0)} items)</dt>
                 <dd className="font-medium">{formatKES(subtotal)}</dd>
               </div>
+              {discountAmt > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <dt className="flex items-center gap-1"><Ticket size={12} /> Discount ({discountPct}%)</dt>
+                  <dd className="font-medium">−{formatKES(discountAmt)}</dd>
+                </div>
+              )}
               <div className="flex justify-between text-slate-600">
                 <dt className="flex items-center gap-1"><Truck size={13} /> Delivery</dt>
                 <dd className={`font-medium ${deliveryFee === 0 ? 'text-green-600' : ''}`}>
                   {deliveryFee === 0 ? 'FREE' : formatKES(deliveryFee)}
                 </dd>
               </div>
-              {deliveryFee > 0 && (
-                <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                  <Tag size={10} /> Add {formatKES(clientConfig.business.freeDeliveryThreshold - subtotal)} more for free delivery
-                </p>
-              )}
               <div className="border-t border-slate-100 pt-2 flex justify-between font-bold text-slate-900">
                 <dt>Total</dt>
                 <dd className="text-lg">{formatKES(total)}</dd>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ShoppingCart, Heart, Search, Menu, X, Zap } from 'lucide-react'
+import { ShoppingCart, Heart, Search, X, Zap, User } from 'lucide-react'
 import { useCartCount, useWishlistStore } from '@/lib/store'
 import { clientConfig } from '@/lib/config'
 
@@ -43,13 +43,14 @@ export default function Navbar() {
         </form>
 
         {/* Nav links — desktop */}
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600 shrink-0">
+        <nav className="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-600 shrink-0">
           {clientConfig.categories.slice(0, 4).map((cat) => (
-            <Link key={cat.slug} href={`/products?category=${cat.slug}`} className="hover:text-brand-600 transition-colors">
+            <Link key={cat.slug} href={`/products?category=${cat.slug}`} className="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-brand-600 transition-colors">
               {cat.name}
             </Link>
           ))}
-          <Link href="/products?sale=flash" className="text-red-600 font-semibold flex items-center gap-1">
+          <Link href="/products" className="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-brand-600 transition-colors">All</Link>
+          <Link href="/products?sale=flash" className="ml-1 text-red-600 font-semibold flex items-center gap-1 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors">
             <Zap size={13} fill="currentColor" /> Sale
           </Link>
         </nav>
@@ -72,6 +73,11 @@ export default function Navbar() {
                 {wishlistCount}
               </span>
             )}
+          </Link>
+
+          {/* Account */}
+          <Link href="/account" className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+            <User size={18} />
           </Link>
 
           {/* Cart */}
