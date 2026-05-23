@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ShoppingCart, Heart, Search, X, Zap, User } from 'lucide-react'
+import { ShoppingCart, Heart, Search, X, User, Layers } from 'lucide-react'
 import { useCartCount, useWishlistStore } from '@/lib/store'
 import { clientConfig } from '@/lib/config'
 
@@ -15,17 +15,23 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-600 text-white text-xs py-1.5 px-4 text-center hidden sm:block">
-        🚚 Free delivery on orders above Ksh 3,000 &nbsp;|&nbsp; 📱 Pay via M-PESA &nbsp;|&nbsp; ↩️ 7-day returns
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs py-1.5 px-4 text-center hidden sm:block">
+        🚚 Free delivery on orders above Ksh 3,000 &nbsp;·&nbsp; 📱 M-PESA checkout &nbsp;·&nbsp; 🏪 Powered by{' '}
+        <a href={clientConfig.brand.platformUrl} target="_blank" rel="noreferrer" className="font-bold underline underline-offset-2 hover:text-indigo-200">
+          Msingi
+        </a>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-            <Zap size={16} className="text-white" />
+          <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center shadow-sm">
+            <Layers size={15} className="text-white" />
           </div>
-          <span className="font-bold text-slate-900 text-lg hidden sm:block">{clientConfig.brand.name}</span>
+          <div className="hidden sm:block">
+            <span className="font-extrabold text-slate-900 text-base leading-none">Msingi</span>
+            <span className="text-slate-400 text-base font-normal"> Store</span>
+          </div>
         </Link>
 
         {/* Search — desktop */}
@@ -51,7 +57,7 @@ export default function Navbar() {
           ))}
           <Link href="/products" className="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-brand-600 transition-colors">All</Link>
           <Link href="/products?sale=flash" className="ml-1 text-red-600 font-semibold flex items-center gap-1 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors">
-            <Zap size={13} fill="currentColor" /> Sale
+            ⚡ Sale
           </Link>
         </nav>
 

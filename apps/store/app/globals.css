@@ -5,13 +5,13 @@
 @tailwind utilities;
 
 :root {
-  /* Brand colours — override per client in client.config.ts */
-  --brand-50:  224 237 255;
-  --brand-100: 191 219 254;
-  --brand-200: 147 197 253;
-  --brand-500: 59 130 246;
-  --brand-600: 0 102 204;
-  --brand-700: 0 79 163;
+  /* Brand colours — Msingi indigo/violet */
+  --brand-50:  238 242 255;
+  --brand-100: 224 231 255;
+  --brand-200: 199 210 254;
+  --brand-500: 99 102 241;
+  --brand-600: 99 102 241;
+  --brand-700: 67 56 202;
 
   /* Surface */
   --surface: 255 255 255;

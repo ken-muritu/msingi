@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Zap, Truck, Shield, RotateCcw, MessageCircle, ChevronRight, TrendingUp } from 'lucide-react'
+import { Zap, Truck, Shield, RotateCcw, MessageCircle, ChevronRight, TrendingUp, Layers, ExternalLink } from 'lucide-react'
 import { clientConfig } from '@/lib/config'
 import { products, getFeaturedProducts, getFlashSaleProducts } from '@/lib/data'
 import ProductCard from '@/components/product/ProductCard'
@@ -57,25 +57,37 @@ export default function HomePage() {
     <div className="space-y-12 pb-8">
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-brand-600 to-brand-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-14 md:py-20 flex flex-col md:flex-row items-center gap-8">
+      <section className="bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+        <div className="relative max-w-7xl mx-auto px-4 py-14 md:py-20 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 text-center md:text-left">
-            <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
-              🇰🇪 Kenya&apos;s Premier Tech Store
-            </span>
+            <a
+              href={clientConfig.brand.platformUrl}
+              target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-4 transition-colors"
+            >
+              <Layers size={11} /> Live Demo — Powered by Msingi <ExternalLink size={10} />
+            </a>
             <h1 className="text-3xl md:text-5xl font-extrabold leading-tight mb-4">
-              Premium Electronics<br />at Honest Prices
+              African Commerce,<br />Done Right.
             </h1>
             <p className="text-white/80 text-lg mb-6 max-w-md">
-              Shop the latest smartphones, laptops, TVs, and home appliances. Pay via M-PESA. Delivered across all 47 counties.
+              Shop the latest electronics and appliances. Pay via M-PESA. Delivered across all 47 counties. Powered by the Msingi platform.
             </p>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <Link href="/products" className="bg-white text-brand-600 hover:bg-brand-50 font-bold px-6 py-3 rounded-xl transition-colors">
+              <Link href="/products" className="bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-6 py-3 rounded-xl transition-colors">
                 Shop Now
               </Link>
               <Link href="/products?sale=flash" className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors">
                 <Zap size={16} fill="white" /> Flash Sale
               </Link>
+              <a
+                href={clientConfig.brand.platformUrl}
+                target="_blank" rel="noreferrer"
+                className="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors border border-white/20"
+              >
+                <ExternalLink size={15} /> About Msingi
+              </a>
             </div>
           </div>
           <div className="relative w-full max-w-sm aspect-square md:w-96 md:h-96 shrink-0">
@@ -215,7 +227,7 @@ export default function HomePage() {
             <p className="text-white/80">Chat with our product experts on WhatsApp — instant replies, real advice.</p>
           </div>
           <a
-            href={`https://wa.me/${clientConfig.business.whatsapp}?text=Hi! I need help choosing a product on ${clientConfig.brand.name}`}
+            href={`https://wa.me/${clientConfig.business.whatsapp}?text=Hi! I need help choosing a product on Msingi Store`}
             target="_blank"
             rel="noreferrer"
             className="shrink-0 bg-white text-[#25D366] hover:bg-green-50 font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors"
