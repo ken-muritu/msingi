@@ -94,7 +94,7 @@ export default function Showcase() {
             Plus the official demo store →
           </p>
           <a
-            href="https://msingisite.vercel.app/"
+            href="https://msingistore.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
