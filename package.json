@@ -1,0 +1,24 @@
+{
+  "name": "msingi",
+  "version": "1.0.0",
+  "description": "Msingi — The Commerce Foundation for African Business",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@msingi/web",
+    "dev:backend": "turbo run dev --filter=@msingi/backend",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "db:generate": "turbo run db:generate --filter=@msingi/backend",
+    "db:push": "turbo run db:push --filter=@msingi/backend"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=18"
+  }
+}

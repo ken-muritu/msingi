@@ -1,0 +1,12 @@
+[
+  { "name": "Smartphones", "slug": "smartphones", "icon": "Smartphone", "description": "Latest phones from top brands", "sortOrder": 1 },
+  { "name": "Laptops", "slug": "laptops", "icon": "Laptop", "description": "Laptops for work & gaming", "sortOrder": 2 },
+  { "name": "Televisions", "slug": "televisions", "icon": "Tv", "description": "Smart TVs & home cinema", "sortOrder": 3 },
+  { "name": "Fridges", "slug": "fridges", "icon": "Thermometer", "description": "Refrigerators & freezers", "sortOrder": 4 },
+  { "name": "Washing Machines", "slug": "washing-machines", "icon": "RefreshCw", "description": "Front load & top load", "sortOrder": 5 },
+  { "name": "Audio", "slug": "audio", "icon": "Headphones", "description": "Headphones, earbuds & speakers", "sortOrder": 6 },
+  { "name": "Tablets", "slug": "tablets", "icon": "Tablet", "description": "Tablets for work & entertainment", "sortOrder": 7 },
+  { "name": "Cookers", "slug": "cookers", "icon": "Flame", "description": "Gas cookers & electric stoves", "sortOrder": 8 },
+  { "name": "Smart Home", "slug": "smart-home", "icon": "Home", "description": "Smart devices & automation", "sortOrder": 9 },
+  { "name": "Accessories", "slug": "accessories", "icon": "Cable", "description": "Cables, cases, chargers & more", "sortOrder": 10 }
+]

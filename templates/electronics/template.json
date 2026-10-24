@@ -1,0 +1,41 @@
+{
+  "name": "Electronics",
+  "slug": "electronics",
+  "description": "Electronics & appliances marketplace template. Includes IMEI verification, spec comparison, BNPL, and installation scheduling.",
+  "version": "1.0.0",
+  "modules": {
+    "core": true,
+    "marketplace": true,
+    "bnpl": true,
+    "dispatch": true,
+    "social": { "whatsapp": "full_bot", "tiktok": false, "meta": true, "live": false },
+    "loyalty": "points_tiers",
+    "b2b": true,
+    "subscriptions": false,
+    "insights": true,
+    "reviews": true,
+    "live": false
+  },
+  "catalog": {
+    "requireKEBSCertification": true,
+    "enableSerialVerification": true,
+    "maxComparisonProducts": 4,
+    "enablePriceHistory": true,
+    "enablePriceAlerts": true,
+    "enableWishlist": true,
+    "enableReviews": true
+  },
+  "productAttributes": {
+    "smartphones": ["Display", "Processor", "RAM", "Storage", "Camera", "Battery", "OS", "Weight", "Colors"],
+    "laptops": ["Display", "Processor", "RAM", "Storage", "GPU", "Battery", "Ports", "OS", "Weight"],
+    "televisions": ["Display Size", "Resolution", "Panel Type", "Smart TV", "HDMI Ports", "Speakers"],
+    "fridges": ["Capacity", "Type", "Energy Rating", "Defrost", "Dimensions"],
+    "washing-machines": ["Capacity", "Type", "Spin Speed", "Energy Rating", "Programs"],
+    "audio": ["Type", "Driver Size", "Connectivity", "Battery", "Noise Cancellation"],
+    "tablets": ["Display", "Processor", "RAM", "Storage", "Camera", "Battery", "OS"]
+  },
+  "brands": [
+    "Samsung", "Apple", "LG", "Sony", "HP", "Dell", "Lenovo", "Infinix", "Tecno",
+    "Xiaomi", "TCL", "Hisense", "Bose", "JBL", "Hotpoint", "Ramtons", "Von"
+  ]
+}

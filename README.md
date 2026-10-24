@@ -1,0 +1,563 @@
+# MSINGI
+
+**The Commerce Foundation for African Business**
+
+> Deploy a complete African commerce business in weeks, not months. M-PESA, WhatsApp, logistics, and trust systems built in — not bolted on.
+
+[![Live](https://img.shields.io/badge/landing-msingios.vercel.app-black?style=flat-square)](https://msingios.vercel.app)
+[![Store](https://img.shields.io/badge/store-msingistore.vercel.app-6366F1?style=flat-square)](https://msingistore.vercel.app)
+[![License](https://img.shields.io/badge/license-all%20rights%20reserved-lightgrey?style=flat-square)](#license)
+[![Stage](https://img.shields.io/badge/stage-MVP-blue?style=flat-square)](#current-status)
+[![CI](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml/badge.svg)](https://github.com/ken-muritu/msingi/actions/workflows/ci.yml)
+
+---
+
+## What is Msingi?
+
+Msingi (Swahili: *"foundation"*) is a modular commerce framework purpose-built for African commerce behavior. Think **"Laravel for African commerce"** — a foundation that handles the hard problems (M-PESA, WhatsApp, logistics, trust) so you focus on your business.
+
+**Msingi is NOT:** a hosted SaaS, a marketplace, a WordPress plugin, or a boilerplate.
+**Msingi IS:** infrastructure, modules, commerce primitives, operational systems.
+
+---
+
+## Current Status
+
+Msingi's backend and integrations are built: NestJS API, M-PESA STK Push, API-persisted cart, notifications, MeiliSearch, Cloudflare R2 storage, PostHog analytics, Docker image, CI, Playwright E2E tests, PWA/offline support, multi-tenancy, KYC verification, security hardening and an admin dashboard.
+
+**Deployed today:** the landing page and the demo storefront on Vercel. The Render backend described in `render.yaml` is not currently running, so the frontends use their built-in mock data.
+
+### What's Implemented
+
+| Component | Status | Details |
+|-----------|--------|----------|
+| Landing page | ✅ Live | [msingios.vercel.app](https://msingios.vercel.app) |
+| Demo storefront | ✅ Live | [msingistore.vercel.app](https://msingistore.vercel.app) — `apps/store` |
+| Showcase stores | ✅ Live | [varidi.vercel.app](https://varidi.vercel.app), [aangweb.vercel.app](https://aangweb.vercel.app) |
+| JWT Authentication | ✅ Built | Global `JwtAuthGuard`, `@Public()` decorator, role-based access |
+| M-PESA Daraja API | ✅ Built | STK Push, STK Query, callback validation, reversal |
+| Checkout flow | ✅ Built | Order creation → STK Push → 90s polling → confirmation |
+| API-persisted cart | ✅ Built | `Cart`/`CartItem` models, session+user cart, guest→user merge |
+| Order lifecycle | ✅ Built | Create, status transitions, inventory reservation/release |
+| Notifications | ✅ Built | WhatsApp (Meta Cloud API) → SMS (Africa's Talking) fallback + Resend email |
+| MeiliSearch | ✅ Built | Auto-indexes on product create/update; DB fallback |
+| Cloudflare R2 Storage | ✅ Built | Upload, presigned URLs, delete; S3-compatible |
+| PostHog Analytics | ✅ Built | Backend event tracking + frontend pageview capture |
+| Docker | ✅ Built | Multi-stage image, non-root user, runs migrations on start |
+| Render deployment | ✅ Built | `render.yaml` with managed PostgreSQL + all env vars |
+| GitHub Actions CI/CD | ✅ Built | Lint + test + build (`ci.yml`); deploy to Render + Vercel on `main` (`deploy.yml`, needs repo secrets) |
+| PWA / Offline | ✅ Built | `@serwist/next` service worker, `manifest.ts`, offline page, installable |
+| Security hardening | ✅ Built | `ThrottlerModule` (rate limiting), `helmet`, `class-validator` DTOs on all endpoints |
+| KYC / Verification | ✅ Built | `VerificationModule` — R2 doc upload, tier-based review workflow, admin approval |
+| Multi-tenancy | ✅ Built | Schema-per-tenant PostgreSQL, domain→schema middleware, `TenantsModule` |
+| Admin dashboard | ✅ Built | `/admin` — orders, sellers, KYC review, tenant provisioning; dark-theme UI |
+| Playwright E2E | ✅ Built | 4 suites: homepage, product, cart, checkout |
+| Test suite | ✅ Built | Jest unit (CartService, OrdersService, MpesaService) + Playwright E2E |
+| Database schema | ✅ 16 models | + Cart, CartItem, VerificationRequest, TenantRegistry |
+| Backend API | ✅ 15 modules | + Cart, Storage, Analytics, Verification, Tenants |
+| Swagger docs | ✅ Built | `/api/docs` |
+
+### Remaining (Next Phase)
+
+| Component | Priority | Notes |
+|-----------|----------|---------|
+| Fashion vertical template | LOW | `templates/fashion/` |
+| Docusaurus docs site | LOW | Auto-generated from OpenAPI |
+| Sentry error tracking | LOW | Production error monitoring |
+| Kenya company registration | MEDIUM | BRS filing, KRA PIN, M-PESA Paybill |
+| First paying client | HIGH | Use Jenga as live reference — see `BUSINESS.md` |
+
+---
+
+## Architecture
+
+Modular monolith (Turborepo monorepo) — single deployable with module composability.
+
+| Layer | Technology | Status |
+|-------|-----------|--------|
+| Frontend | Next.js 14 (App Router) + Tailwind CSS | ✅ Live |
+| Backend | NestJS 10 + Prisma ORM | ✅ Production-ready |
+| Database | PostgreSQL 15+ | ✅ Render managed |
+| Packages | `@msingi/types` + `@msingi/config` | ✅ Building |
+| Search | MeiliSearch | ✅ Integrated (auto-index) |
+| Cache/Queue | Redis + BullMQ | ✅ BullMQ wired |
+| Payments | M-PESA Daraja STK Push | ✅ Live |
+| Notifications | WhatsApp + Africa's Talking + Resend | ✅ Live |
+| Analytics | PostHog (backend + frontend) | ✅ Live |
+| Storage | Cloudflare R2 | ✅ Live |
+| Infra | Docker + Turborepo + GitHub Actions | ✅ Full CI/CD |
+
+---
+
+## Monorepo Structure
+
+```
+msingi/
+├── apps/
+│   ├── web/                   # @msingi/web — Next.js 14 framework site + reference store
+│   │   ├── app/               # App Router pages
+│   │   │   ├── page.tsx       # Landing page (Hero → Features → Modules → Arch → Demo → Showcase → GetStarted)
+│   │   │   ├── layout.tsx     # Root layout (dark theme, MsingiNav, MsingiFooter)
+│   │   │   ├── globals.css    # Tailwind base + dark theme styles
+│   │   │   ├── manifest.ts    # PWA manifest (installable, theme colour)
+│   │   │   ├── sw.ts          # Serwist service worker (offline cache)
+│   │   │   ├── offline/       # Offline fallback page
+│   │   │   ├── admin/         # Admin dashboard — layout + page (orders, sellers, KYC, tenants)
+│   │   │   ├── products/      # Product listing + detail pages
+│   │   │   ├── seller/        # Seller dashboard, product management
+│   │   │   ├── cart/          # Shopping cart
+│   │   │   ├── checkout/      # Checkout + M-PESA payment
+│   │   │   └── ...            # account, deals, compare, wishlist, live
+│   │   ├── components/
+│   │   │   ├── landing/       # Framework landing page (9 components)
+│   │   │   │   ├── Hero.tsx           # Headline, terminal preview, stats
+│   │   │   │   ├── Features.tsx       # 8 feature cards (M-PESA, WhatsApp, etc.)
+│   │   │   │   ├── Modules.tsx        # 10 backend modules with status
+│   │   │   │   ├── Architecture.tsx   # Tech stack grid + monorepo tree
+│   │   │   │   ├── Demo.tsx           # Interactive API response viewer
+│   │   │   │   ├── Showcase.tsx       # Live stores built on Msingi (3 + official demo)
+│   │   │   │   ├── GetStarted.tsx     # 4-step setup + seed credentials
+│   │   │   │   ├── MsingiNav.tsx      # Dark glassmorphism navbar
+│   │   │   │   └── MsingiFooter.tsx   # Minimal dark footer
+│   │   │   ├── home/          # Store homepage sections (reference impl)
+│   │   │   ├── layout/        # Store layout (Navbar, Footer, CartSidebar, BottomNav)
+│   │   │   ├── products/      # ProductCard, CompareBar
+│   │   │   ├── checkout/      # MPesaModal (wired to live STK Push + polling)
+│   │   │   └── providers/     # PostHogProvider (pageview tracking)
+│   │   ├── lib/
+│   │   │   ├── api.ts         # Typed Msingi API client — auth, cart, orders, payments
+│   │   │   ├── hooks.ts       # React hooks — useProducts, useAuth, useCart, useOrders
+│   │   │   ├── posthog.ts     # PostHog init + browser client
+│   │   │   ├── data.ts        # Static mock data (fallback when API unavailable)
+│   │   │   ├── store.ts       # Zustand stores — cart, wishlist, compare, auth
+│   │   │   └── utils.ts       # Helpers (formatKES, WhatsApp messages, etc.)
+│   │   └── vercel.json        # Vercel monorepo deployment config
+│   │
+│   └── store/                 # @msingi/store — Demo storefront (Msingi-branded)
+│       ├── app/               # App Router pages
+│       │   ├── page.tsx       # Home — hero, flash sale countdown, trending, brands strip
+│       │   ├── layout.tsx     # Root layout (DemoBanner, Navbar, Footer, BottomNav)
+│       │   ├── globals.css    # Tailwind + Msingi indigo/violet brand palette
+│       │   ├── not-found.tsx  # Custom 404 page
+│       │   ├── products/      # Product listing + loading skeleton + detail page
+│       │   ├── cart/          # Cart with coupon codes + free delivery progress bar
+│       │   ├── checkout/      # 3-step checkout (contact, shipping, payment)
+│       │   ├── wishlist/      # Wishlist with move-all-to-cart
+│       │   └── account/       # Account hub + login + register pages
+│       ├── components/
+│       │   ├── layout/        # DemoBanner, Navbar, Footer, BottomNav
+│       │   └── product/       # ProductCard
+│       ├── lib/
+│       │   ├── config.ts      # clientConfig — branding, categories, payments, SEO
+│       │   ├── data.ts        # 12 mock products + reviews + helper functions
+│       │   └── store.ts       # Zustand — cart, wishlist, compare (localStorage)
+│       └── vercel.json        # Vercel config (corepack + pnpm@9.1.0)
+│
+├── backend/                   # @msingi/backend — NestJS API server
+│   ├── src/
+│   │   ├── main.ts            # Bootstrap, Swagger, CORS (multi-origin), PORT env
+│   │   ├── app.module.ts      # Root module (12 feature modules + global Analytics)
+│   │   ├── prisma/            # PrismaService + PrismaModule
+│   │   └── modules/
+│   │       ├── health/        # GET /health — framework status
+│   │       ├── auth/          # JWT auth — register, login, profile, guard, strategy
+│   │       ├── catalog/       # GET /products, /categories — MeiliSearch auto-index
+│   │       ├── inventory/     # Transactional stock, SELECT FOR UPDATE reservation
+│   │       ├── orders/        # Order lifecycle, notifications + analytics on create
+│   │       ├── payments/      # M-PESA Daraja STK Push, callback, query, reversal
+│   │       ├── sellers/       # Seller portal, KYC, payouts
+│   │       ├── search/        # MeiliSearch integration, autocomplete, facets, reindex
+│   │       ├── reviews/       # Verified purchase reviews, seller response
+│   │       ├── notifications/ # WhatsApp (Meta) → SMS (AT) fallback + Resend email
+│   │       ├── cart/          # API-persisted cart, session+user, guest merge
+│   │       ├── storage/       # Cloudflare R2 upload, presigned URLs, delete
+│   │       ├── analytics/     # PostHog server-side event tracking
+│   │       ├── verification/  # KYC — tier review workflow, R2 doc upload, admin approval
+│   │       └── tenants/       # Multi-tenancy — provision schema, domain→schema middleware
+│   ├── prisma/
+│   │   ├── schema.prisma      # 16 models (+ Cart, CartItem, VerificationRequest, TenantRegistry)
+│   │   └── seed.ts            # Reference data seeder
+│   ├── Dockerfile             # Multi-stage production image (node:22-alpine)
+│   ├── .dockerignore
+│   └── .env.example           # All environment variables documented
+│
+├── packages/
+│   ├── types/                 # @msingi/types — MsingiConfig type system + commerce entities
+│   └── config/                # @msingi/config — defineConfig(), getConfig(), formatPrice()
+│
+├── templates/
+│   └── electronics/           # Jenga Electronics vertical template
+│       ├── categories.json
+│       └── template.json
+│
+├── jenga.config.ts            # Reference implementation config (MsingiConfig)
+├── turbo.json                 # Turborepo pipeline configuration
+├── pnpm-workspace.yaml        # Workspace: apps/*, packages/*, backend
+├── tsconfig.base.json         # Shared TypeScript config
+└── package.json               # Root scripts (dev, build, db:push, etc.)
+```
+
+---
+
+## Core Modules
+
+| Module | Endpoint Prefix | Status | Description |
+|--------|----------------|--------|-------------|
+| **Health** | `GET /health` | ✅ | Framework status, version |
+| **Auth** | `/auth` | ✅ | JWT register/login/profile; global `JwtAuthGuard` |
+| **Catalog** | `/products`, `/categories` | ✅ | Filters, pagination; MeiliSearch auto-index |
+| **Inventory** | `/inventory` | ✅ | Transactional stock, `SELECT FOR UPDATE` reservations |
+| **Orders** | `/orders` | ✅ | Lifecycle, notifications + analytics on create |
+| **Payments** | `/payments` | ✅ | Live M-PESA STK Push, callback, query, reversal |
+| **Sellers** | `/sellers` | ✅ | Seller portal, KYC, payouts |
+| **Search** | `/search` | ✅ | MeiliSearch full-text, autocomplete, facets, reindex |
+| **Reviews** | `/reviews` | ✅ | Verified purchase reviews, seller response |
+| **Notifications** | `/notifications` | ✅ | WhatsApp → SMS fallback + Resend email |
+| **Cart** | `/cart` | ✅ | API-persisted cart, guest+user, merge on login |
+| **Storage** | `/storage` | ✅ | Cloudflare R2 upload, presigned URLs, delete |
+| **Analytics** | — | ✅ | PostHog server-side (global service) |
+| **Verification** | `/verification` | ✅ | KYC tier-based review: basic → verified → premium; R2 doc upload |
+| **Tenants** | `/tenants` | ✅ | Multi-tenant provisioning; schema-per-tenant PostgreSQL; domain routing |
+
+All endpoints are prefixed with `/api/v1/`.
+
+---
+
+## Shared Packages
+
+### `@msingi/types`
+
+Exports the full `MsingiConfig` type system (20+ interfaces) and generic commerce entity types. Every deployment config is typed against `MsingiConfig`.
+
+### `@msingi/config`
+
+Configuration loader with deep merging and validation:
+
+```typescript
+import { defineConfig, getConfig, isModuleEnabled, formatPrice } from '@msingi/config';
+```
+
+| Export | Purpose |
+|--------|---------|
+| `defineConfig(config)` | Load and validate a MsingiConfig |
+| `getConfig()` | Retrieve the loaded config (throws if not loaded) |
+| `isModuleEnabled(module)` | Check if a module is active |
+| `getInstanceName()` | Instance display name |
+| `getVertical()` | Current vertical (electronics, fashion, etc.) |
+| `getCurrency()` | Configured currency code |
+| `formatPrice(amount)` | Format price with currency symbol |
+
+---
+
+## Live Demos & Showcase
+
+### Official Demo Store
+
+**Msingi Store** — [msingistore.vercel.app](https://msingistore.vercel.app)
+
+A fully-featured electronics storefront demonstrating the Msingi platform:
+- Indigo/violet Msingi brand identity + "Powered by Msingi" demo banner
+- Home page with hero, flash sale countdown, trending products, brand strip
+- Product listing with filters, detail page with sticky mobile buy bar
+- Cart with coupon codes (`JENGA10`, `WELCOME5`, `FLASH20`) + free delivery progress bar
+- 3-step checkout (contact, shipping, M-PESA/card/COD payment)
+- Wishlist, account login/register, 404 page, loading skeletons
+- Deployed from `apps/store/` on Vercel (Root Directory: `apps/store`)
+
+### Stores Built on Msingi
+
+| Store | URL | Vertical |
+|-------|-----|----------|
+| Varidi | [varidi.vercel.app](https://varidi.vercel.app) | Fashion & Lifestyle |
+| Aang Web | [aangweb.vercel.app](https://aangweb.vercel.app) | Electronics & Tech |
+
+### Reference Config
+
+- **Config**: `jenga.config.ts`
+- **Template**: `templates/electronics/`
+- **Vertical**: `electronics`
+- **Features**: M-PESA BNPL, serial verification, installation services, multi-seller marketplace
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** 18+
+- **pnpm** 9+
+- **PostgreSQL** 15+
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Setup database
+
+```bash
+# Set DATABASE_URL for the backend (shell or a git-ignored backend/.env), e.g.
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/msingi_dev?schema=public"
+
+# Push schema to database
+pnpm db:push
+
+# Seed with reference data (Jenga Electronics)
+pnpm --filter @msingi/backend db:seed
+```
+
+### 3. Build shared packages
+
+```bash
+pnpm --filter @msingi/types build
+pnpm --filter @msingi/config build
+```
+
+### 4. Run development servers
+
+```bash
+pnpm dev              # Both frontend + backend
+pnpm dev:web          # Frontend only → http://localhost:3000
+pnpm dev:backend      # Backend only  → http://localhost:4000
+```
+
+### 5. Explore
+
+- **Landing page**: http://localhost:3000 (Msingi framework site)
+- **Swagger API docs**: http://localhost:4000/api/docs
+- **Health check**: http://localhost:4000/api/v1/health
+- **Demo store** (reference): http://localhost:3000/products
+- **Msingi Store** (standalone): run `pnpm --filter @msingi/store dev` → http://localhost:3001
+
+### Seed credentials (local development only)
+
+Created by `db:seed` in your local database. Never seed a production database with them.
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@jenga.co.ke` | `admin123456` |
+| Seller | `samsung@jenga.co.ke` | `seller123456` |
+| Buyer | `buyer@test.com` | `buyer123456` |
+
+---
+
+## API Quick Reference
+
+```bash
+# Health
+curl http://localhost:4000/api/v1/health
+
+# Products (paginated, filterable)
+curl http://localhost:4000/api/v1/products
+curl "http://localhost:4000/api/v1/products?brand=Samsung&minPrice=50000"
+
+# Categories
+curl http://localhost:4000/api/v1/categories
+
+# Sellers
+curl http://localhost:4000/api/v1/sellers
+
+# Search
+curl "http://localhost:4000/api/v1/search?q=samsung"
+
+# Auth
+curl -X POST http://localhost:4000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"buyer@test.com","password":"buyer123456"}'
+```
+
+---
+
+## Frontend API Layer
+
+The frontend (`apps/web`) includes a typed API client with automatic fallback:
+
+- **`lib/api.ts`** — Typed fetch client for all Msingi endpoints
+- **`lib/hooks.ts`** — React hooks that try the live API, then fall back to static mock data
+
+```typescript
+import { useProducts, useCategories, useSearch } from '@/lib/hooks'
+
+// In any client component:
+const { data: products, loading, isLive } = useProducts()
+const { data: categories } = useCategories()
+const { data: results, totalCount } = useSearch('samsung')
+```
+
+Set `NEXT_PUBLIC_API_URL` in `apps/web/.env.local` to point to your backend.
+
+---
+
+## Configuration System
+
+Every Msingi deployment is driven by a single config file:
+
+```typescript
+// jenga.config.ts
+import type { MsingiConfig } from '@msingi/types';
+
+const config: MsingiConfig = {
+  instance: {
+    name: 'Jenga Electronics',
+    slug: 'jenga',
+    domain: 'jenga.co.ke',
+    vertical: 'electronics',
+  },
+  branding: {
+    logo: '/brand/logo.svg',
+    poweredByMsingi: false,
+    // ...colors, typography
+  },
+  modules: {
+    core: true,
+    marketplace: true,
+    bnpl: true,
+    dispatch: true,
+    social: { whatsapp: 'full_bot', tiktok: false, meta: false, live: false },
+    // ...
+  },
+  payments: {
+    mpesa: { stkPush: true, paybill: '247247', lipaMdogoMdogo: true },
+    cards: { provider: 'pesapal' },
+    cashOnDelivery: { enabled: true, maxOrderValue: 50000 },
+  },
+  // ...delivery, catalog, content, infrastructure, seo
+};
+
+export default config;
+```
+
+---
+
+## Deployment
+
+### Vercel (Frontend)
+
+Both frontend apps have their own `vercel.json` with corepack-pinned pnpm@9.1.0.
+
+#### Landing site (`apps/web`)
+
+1. Import the repo in Vercel
+2. Set **Root Directory** to `apps/web`
+3. Add env: `NEXT_PUBLIC_API_URL=https://your-api.example.com/api/v1`
+4. Deploy → [msingios.vercel.app](https://msingios.vercel.app)
+
+#### Demo storefront (`apps/store`)
+
+1. Import the repo in Vercel (new project)
+2. Set **Root Directory** to `apps/store`
+3. Branch: `main`
+4. Deploy → [msingistore.vercel.app](https://msingistore.vercel.app)
+
+The landing page is fully static — no backend needed for the framework site.
+The demo store runs entirely on mock data (no backend required).
+The reference store pages in `apps/web` (`/products`, `/cart`, etc.) fall back to mock data without a backend URL.
+
+### Backend (Render — fully configured)
+
+`render.yaml` at the repo root defines the full Render deployment — just connect the repo:
+
+```bash
+# The render.yaml handles:
+# - Web service (Docker build, auto-deploy on main push)
+# - Managed PostgreSQL (1 GB free)
+# - All environment variables pre-mapped
+```
+
+1. Connect repo on [render.com](https://render.com) → **New > Blueprint**
+2. Set secret env vars: `JWT_SECRET`, `MPESA_*`, `RESEND_API_KEY`, `AT_API_KEY`, `POSTHOG_API_KEY`, `MEILISEARCH_API_KEY`, `R2_*`
+3. Push to `main` — GitHub Actions runs CI then triggers Render deploy hook
+
+The Docker image runs `prisma migrate deploy` automatically before starting the server.
+
+Alternatives: Railway, Fly.io, any host with Docker + PostgreSQL support.
+
+---
+
+## Tech Stack
+
+| Category | Choice | Why |
+|----------|--------|-----|
+| Monorepo | Turborepo + pnpm | Fast builds, workspace protocol |
+| Frontend | Next.js 14 | App Router, dark landing page + demo store |
+| Styling | Tailwind CSS | Utility-first, responsive |
+| State | Zustand | Lightweight, persistent stores |
+| Backend | NestJS 10 | Modular, decorators, Swagger |
+| ORM | Prisma | Type-safe, migrations, schema push |
+| Database | PostgreSQL | JSONB attributes, full-text search |
+| Auth | JWT + bcrypt | Stateless, role-based |
+| Payments | M-PESA Daraja + Pesapal | STK Push, BNPL, callbacks, cards |
+| Search | MeiliSearch | Typo-tolerant, faceted, sub-50ms — auto-indexed |
+| Queue | Redis + BullMQ | Background job queue for notifications |
+| Notifications | WhatsApp (Meta) + Africa's Talking + Resend | Live — WA fallback to SMS |
+| Storage | Cloudflare R2 | $0 egress, S3-compatible — live |
+| Analytics | PostHog | 1M events/mo free — backend + frontend live |
+| Types | TypeScript | End-to-end type safety |
+
+### Infrastructure Costs
+
+| Phase | Monthly | Annual |
+|-------|---------|--------|
+| Development (free tiers) | $0 | $0 |
+| First client | ~$20 | ~$240 |
+| 5 clients (production) | ~$315 | ~$3,780 |
+| 10 clients (scaled) | ~$600 | ~$7,200 |
+
+---
+
+## Testing
+
+```bash
+# Run unit tests
+pnpm --filter @msingi/backend test
+
+# With coverage
+pnpm --filter @msingi/backend test:cov
+```
+
+**35 tests across 7 suites:**
+- `cart.service.spec.ts` — resolveCart, addItem, updateItem, clearCart, mergeGuestCart
+- `orders.service.spec.ts` — createOrder, getOrderById, updateOrderStatus, getUserOrders
+- `mpesa.service.spec.ts` — formatPhone, generatePassword, validateCallback
+- `homepage.spec.ts` — landing page render, nav links, hero CTA
+- `product.spec.ts` — product listing, filter, detail page
+- `cart.spec.ts` — add to cart, quantity update, remove item
+- `checkout.spec.ts` — checkout flow, M-PESA modal trigger
+
+See **[TESTING.md](./TESTING.md)** for the full integration testing guide (real M-PESA, R2, SMS, WhatsApp).
+
+---
+
+## Documentation
+
+- **[ROADMAP.md](./ROADMAP.md)** — Updated gap tracker and next-phase priorities
+- **[BUSINESS.md](./BUSINESS.md)** — Company-building playbook, revenue projections, legal requirements
+- **[TESTING.md](./TESTING.md)** — Integration testing guide: M-PESA, KYC, multi-tenancy with real users
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Development setup, architecture guide, coding standards
+
+---
+
+## License
+
+Copyright © 2026 Kennedy Muritu. All rights reserved. The code is public to read, not to reuse. See [LICENSE](LICENSE).
+
+`ROADMAP.md` and `BUSINESS.md` describe a possible future open-source (MIT) release of the framework. That is a plan, not the current licence.
+
+---
+
+## Admin Dashboard
+
+Access at `http://localhost:3000/admin` (or your deployed domain `/admin`).
+
+The dashboard has its own layout (no public nav/footer) with a collapsible sidebar and five sections:
+
+| Tab | What you can do |
+|-----|-----------------|
+| **Overview** | Revenue by category, recent platform activity |
+| **Orders** | Search by order #, filter by status, update order status live |
+| **Sellers** | Search sellers, view badge/verification status |
+| **KYC** | Approve or reject seller verification requests, view uploaded documents |
+| **Tenants** | Provision new tenants (creates a PostgreSQL schema), suspend/activate |
+
+The dashboard auto-detects backend connectivity — if the backend is offline it falls back to mock data with a clear indicator.
